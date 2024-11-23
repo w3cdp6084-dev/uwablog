@@ -30,14 +30,16 @@
       </div>
     </main>
 
-    <nav class="menu" :class="{ 'is-open': isMenuOpen }">
-      <ul class="menu-list">
-        <li><a href="/">About</a></li>
-        <li><a href="/projects">Projects</a></li>
-        <li><a href="/member">Member</a></li>
-        <li><a href="/contact">Contact</a></li>
-      </ul>
-    </nav>
+    <div class="menu" :class="{ 'is-open': isMenuOpen }">
+      <nav class="menu-inner">
+        <ul class="menu-list">
+          <li><a href="/about">About</a></li>
+          <li><a href="/projects">Projects</a></li>
+          <li><a href="/member">Member</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
 
     <div 
       class="overlay" 
@@ -51,20 +53,20 @@
 export default {
   data() {
     return {
-      isMenuOpen: false,
-    };
+      isMenuOpen: false
+    }
   },
   methods: {
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
-      document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
+      // デバッグ用
+      console.log('Menu state:', this.isMenuOpen);
     },
     closeMenu() {
       this.isMenuOpen = false;
-      document.body.style.overflow = '';
     }
-  },
-};
+  }
+}
 </script>
 
 <style scoped>
@@ -77,11 +79,11 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2rem;
+  padding: 0 1rem;
   z-index: 150;
 }
 
@@ -91,7 +93,7 @@ export default {
 }
 
 .logo img {
-  height: 24px;
+  height: 20px;
   width: auto;
 }
 
@@ -132,8 +134,6 @@ export default {
 .main-content {
   padding-top: 80px;
   transition: transform 0.3s;
-  min-height: 100vh;
-  background: #fff;
 }
 
 .main-content.is-menu-open {
@@ -147,31 +147,39 @@ export default {
   width: 300px;
   height: 100vh;
   background: #fff;
-  padding: 100px 40px;
+  transform: translateX(100%);
   transition: transform 0.3s;
   z-index: 100;
-  transform: translateX(100%);
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  display: block;
 }
 
 .menu.is-open {
   transform: translateX(0);
 }
 
+.menu-inner {
+  padding: 100px 40px 40px;
+  display: block;
+}
+
 .menu-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: block;
 }
 
 .menu-list li {
-  margin-bottom: 20px;
+  margin: 0 0 24px;
+  display: block;
 }
 
 .menu-list a {
-  color: #000;
+  display: block;
+  font-size: 18px;
+  color: #333;
   text-decoration: none;
-  font-size: 1.2rem;
+  padding: 8px 0;
 }
 
 .overlay {
@@ -184,7 +192,7 @@ export default {
   opacity: 0;
   visibility: hidden;
   transition: 0.3s;
-  z-index: 50;
+  z-index: 90;
 }
 
 .overlay.is-visible {
@@ -214,5 +222,61 @@ h1 {
 p {
   margin-bottom: 1rem;
   line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .menu {
+    width: 80%;
+    padding: 0;
+  }
+
+  .menu-inner {
+    padding: 80px 24px 24px;
+    min-height: 100%;
+  }
+
+  .menu-list {
+    margin-top: 20px;
+  }
+
+  .menu-list li {
+    margin: 0 0 20px;
+  }
+
+  .menu-list a {
+    font-size: 16px;
+    padding: 10px 0;
+    display: block;
+    width: 100%;
+  }
+
+  .main-content.is-menu-open {
+    transform: translateX(-80vw);
+  }
+
+  .test-content {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+  }
+
+  .test-box {
+    height: 150px;
+  }
+}
+
+@supports (padding: max(0px)) {
+  .menu-inner {
+    padding-top: max(80px, env(safe-area-inset-top));
+    padding-right: max(24px, env(safe-area-inset-right));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-left: max(24px, env(safe-area-inset-left));
+  }
 }
 </style>
