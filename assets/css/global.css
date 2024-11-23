@@ -1,0 +1,46 @@
+/* グローバルで適用したいカスタムスタイル */
+body {
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .header-custom {
+    background-color: #f8f8f8;
+    border-bottom: 2px solid #ddd;
+  }
+
+  @media (max-width: 768px) {
+    .menu {
+      display: none;
+    }
+  
+    .menu.mobile-active {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: #fff;
+      padding: 1rem;
+      border-top: 1px solid #eaeaea;
+    }
+  
+    .menu-link {
+      text-align: center;
+    }
+  
+    .hamburger {
+      display: block;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+  }
+  
+  @media (min-width: 769px) {
+    .hamburger {
+      display: none;
+    }
+  }
