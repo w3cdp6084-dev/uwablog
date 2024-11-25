@@ -7,7 +7,8 @@
         </a>
       </div>
       
-      <div class="hamburger-wrapper">
+      <div class="header-right">
+        <ThemeToggle />
         <button 
           class="hamburger-btn" 
           :class="{ 'is-active': isMenuOpen }"
@@ -50,17 +51,29 @@
 </template>
 
 <script>
+import ThemeToggle from './ThemeToggle.vue'
+
 export default {
+  components: {
+    ThemeToggle
+  },
   data() {
     return {
-      isMenuOpen: false
+      isMenuOpen: false,
+      isToggling: false
     }
   },
   methods: {
     toggleMenu() {
-      this.isMenuOpen = !this.isMenuOpen;
-      // デバッグ用
-      console.log('Menu state:', this.isMenuOpen);
+      if (this.isToggling) return
+      this.isToggling = true
+      
+      this.isMenuOpen = !this.isMenuOpen
+      console.log('Menu state:', this.isMenuOpen)
+      
+      setTimeout(() => {
+        this.isToggling = false
+      }, 300)
     },
     closeMenu() {
       this.isMenuOpen = false;
@@ -72,6 +85,7 @@ export default {
 <style scoped>
 .site-wrapper {
   position: relative;
+  min-height: 100vh;
 }
 
 .l-header {
@@ -84,120 +98,54 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 0 1rem;
-  z-index: 150;
+  z-index: 50;
+  background-color: var(--bg-color);
 }
 
-.logo {
-  position: relative;
-  z-index: 1000;
-}
-
-.logo img {
-  height: 20px;
-  width: auto;
-}
-
-.hamburger-wrapper {
-  position: relative;
-  z-index: 200;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .hamburger-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   width: 30px;
   height: 20px;
+  position: relative;
+  z-index: 50;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
-  position: relative;
 }
 
 .hamburger-line {
-  display: block;
-  width: 30px;
+  position: absolute;
+  left: 0;
+  width: 100%;
   height: 1px;
-  background-color: #000;
+  background-color: var(--text-color);
   transition: transform 0.3s;
 }
 
+.hamburger-line:nth-child(1) { top: 5px; }
+.hamburger-line:nth-child(2) { bottom: 5px; }
+
 .hamburger-btn.is-active .hamburger-line:nth-child(1) {
-  transform: translateY(9px) rotate(45deg);
+  transform: translateY(4px) rotate(45deg);
 }
 
 .hamburger-btn.is-active .hamburger-line:nth-child(2) {
-  transform: translateY(-9px) rotate(-45deg);
+  transform: translateY(-4px) rotate(-45deg);
 }
 
 .main-content {
-  padding-top: 80px;
+  padding-top: 60px;
   transition: transform 0.3s;
+  background-color: var(--bg-color);
 }
 
 .main-content.is-menu-open {
   transform: translateX(-300px);
-}
-
-.menu {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 300px;
-  height: 100vh;
-  background: #fff;
-  transform: translateX(100%);
-  transition: transform 0.3s;
-  z-index: 100;
-  display: block;
-}
-
-.menu.is-open {
-  transform: translateX(0);
-}
-
-.menu-inner {
-  padding: 100px 40px 40px;
-  display: block;
-}
-
-.menu-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: block;
-}
-
-.menu-list li {
-  margin: 0 0 24px;
-  display: block;
-}
-
-.menu-list a {
-  display: block;
-  font-size: 18px;
-  color: #333;
-  text-decoration: none;
-  padding: 8px 0;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  visibility: hidden;
-  transition: 0.3s;
-  z-index: 90;
-}
-
-.overlay.is-visible {
-  opacity: 1;
-  visibility: visible;
 }
 
 .test-content {
@@ -209,74 +157,78 @@ export default {
 .test-box {
   width: 100%;
   height: 200px;
-  background: #f0f0f0;
+  background-color: var(--menu-bg);
   margin: 2rem 0;
   border-radius: 8px;
 }
 
-h1 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
+.menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100vh;
+  background-color: var(--menu-bg);
+  transform: translateX(100%);
+  transition: transform 0.3s;
+  z-index: 40;
 }
 
-p {
-  margin-bottom: 1rem;
-  line-height: 1.6;
+.menu.is-open {
+  transform: translateX(0);
+}
+
+.menu-inner {
+  padding: 100px 40px 40px;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-list li {
+  margin: 0 0 24px;
+}
+
+.menu-list a {
+  display: block;
+  font-size: 18px;
+  color: var(--text-color);
+  text-decoration: none;
+  padding: 8px 0;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: var(--overlay-bg);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+  z-index: 30;
+}
+
+.overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 @media (max-width: 768px) {
   .menu {
-    width: 80%;
-    padding: 0;
-  }
-
-  .menu-inner {
-    padding: 80px 24px 24px;
-    min-height: 100%;
-  }
-
-  .menu-list {
-    margin-top: 20px;
-  }
-
-  .menu-list li {
-    margin: 0 0 20px;
-  }
-
-  .menu-list a {
-    font-size: 16px;
-    padding: 10px 0;
-    display: block;
-    width: 100%;
+    width: 80vw;
   }
 
   .main-content.is-menu-open {
     transform: translateX(-80vw);
   }
 
-  .test-content {
-    padding: 1rem;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  p {
-    font-size: 0.9rem;
-  }
-
   .test-box {
     height: 150px;
-  }
-}
-
-@supports (padding: max(0px)) {
-  .menu-inner {
-    padding-top: max(80px, env(safe-area-inset-top));
-    padding-right: max(24px, env(safe-area-inset-right));
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
-    padding-left: max(24px, env(safe-area-inset-left));
   }
 }
 </style>
