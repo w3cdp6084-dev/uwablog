@@ -1,5 +1,5 @@
 <template>
-  <div class="post-detail">
+  <div class="post-container">
     <article v-if="post" class="post-content">
       <header>
         <h1>{{ post.metadata.title }}</h1>
@@ -25,15 +25,27 @@
             {{ block.paragraph.rich_text?.[0]?.plain_text || '' }}
           </p>
 
-          <h2 v-else-if="block.type === 'heading_1'" class="heading-1">
+          <h2 
+            v-if="block.type === 'heading_1'" 
+            :id="`heading-${block.id}`"
+            class="heading-1"
+          >
             {{ block.heading_1.rich_text?.[0]?.plain_text || '' }}
           </h2>
 
-          <h3 v-else-if="block.type === 'heading_2'" class="heading-2">
+          <h3 
+            v-else-if="block.type === 'heading_2'" 
+            :id="`heading-${block.id}`"
+            class="heading-2"
+          >
             {{ block.heading_2.rich_text?.[0]?.plain_text || '' }}
           </h3>
 
-          <h4 v-else-if="block.type === 'heading_3'" class="heading-3">
+          <h4 
+            v-else-if="block.type === 'heading_3'" 
+            :id="`heading-${block.id}`"
+            class="heading-3"
+          >
             {{ block.heading_3.rich_text?.[0]?.plain_text || '' }}
           </h4>
 
@@ -65,26 +77,74 @@
         </div>
       </div>
     </article>
+
+    <TableOfContents 
+      v-if="headings.length > 0"
+      :headings="headings" 
+      class="toc-container"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 const route = useRoute()
-const { data: post, error } = await useFetch(`/api/posts/${route.params.slug}`, {
-  key: route.params.slug as string
-})
+const { data: post } = await useFetch(`/api/posts/${route.params.slug}`)
 
 const formatDate = (dateString: string) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
 }
+
+// 見出しデータの抽出
+const headings = computed(() => {
+  if (!post.value?.content) return []
+  
+  return post.value.content
+    .filter(block => ['heading_1', 'heading_2', 'heading_3'].includes(block.type))
+    .map(block => {
+      const level = parseInt(block.type.split('_')[1])
+      const text = block[block.type].rich_text?.[0]?.plain_text || ''
+      const id = `heading-${block.id}`
+      return { id, text, level }
+    })
+})
+
+// デバッグ用
+watchEffect(() => {
+  console.log('Headings:', headings.value)
+})
 </script>
 
 <style scoped>
-.post-detail {
-  max-width: 800px;
+.post-container {
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 2rem;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.post-content {
+  max-width: 800px;
+}
+
+.toc-container {
+  display: none; /* モバイルでは非表示 */
+}
+
+/* デスクトップサイズで目次を表示 */
+@media (min-width: 1024px) {
+  .toc-container {
+    display: block;
+  }
+}
+
+/* 見出し要素のスタイル調整 */
+:deep(.heading-1),
+:deep(.heading-2),
+:deep(.heading-3) {
+  scroll-margin-top: 80px; /* 固定ヘッダーの高さに応じて調整 */
 }
 
 .content {
@@ -175,5 +235,16 @@ const formatDate = (dateString: string) => {
   width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+/* スムーススクロールの設定 */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 1023px) {
+  .post-container {
+    grid-template-columns: 1fr;
+  }
 }
 </style> 
