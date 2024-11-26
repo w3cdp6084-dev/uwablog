@@ -10,13 +10,16 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@notionhq/client": "^2.2.15",
     "gsap": "^3.12.5",
+    "notion-to-md": "^3.1.1",
     "nuxt": "^3.14.1592",
     "three": "^0.170.0",
     "vue": "latest",
     "vue-router": "latest"
   },
   "devDependencies": {
+    "@types/marked": "^6.0.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15"
