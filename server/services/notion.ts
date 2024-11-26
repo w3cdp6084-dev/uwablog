@@ -13,51 +13,61 @@ const n2m = new NotionToMarkdown({ notionClient: notion })
 // メタデータの取得
 const getPageMetaData = (post: any) => {
   try {
-    // デバッグ用
-    console.log('Raw post data:', post)
-    console.log('Properties:', post.properties)
-
-    // プロパティの存在確認
     if (!post?.properties) {
       throw new Error('No properties found in post')
     }
 
-    const properties = post.properties
+    // タイトルの取得
+    const title = post.properties.Name?.title[0]?.plain_text || 
+                 post.properties.Title?.title[0]?.plain_text || 
+                 'Untitled'
 
-    // 各プロパティの安全な取得
-    const title = properties.Title?.title?.[0]?.plain_text || 'Untitled'
-    const description = properties.Description?.rich_text?.[0]?.plain_text || ''
-    const date = properties.Date?.date?.start || ''
-    const slug = properties.Slug?.formula?.string || ''
-    const tags = properties.Tags?.multi_select?.map((tag: any) => tag.name) || []
-    const thumbnail = properties.Thumbnail?.files?.[0]?.file?.url || 
-                     properties.Thumbnail?.files?.[0]?.external?.url || null
+    // Slugプロパティから取得を試みる
+    let slug = post.properties.Slug?.rich_text?.[0]?.plain_text || ''
 
-    const metadata = {
-      id: post.id || '',
-      title,
-      description,
-      date,
-      slug,
-      tags,
-      thumbnail
+    // Slugが空の場合、タイトルからスラッグを生成
+    if (!slug) {
+      // 日本語の場合はローマ字に変換するか、IDを使用
+      if (/^[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\u3400-\u4dbf]+$/.test(title)) {
+        // 日本語の場合はIDベースのスラッグを使用
+        slug = `post-${post.id}`
+      } else {
+        // 英数字の場合は通常のスラッグ生成
+        slug = title
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+      }
     }
 
-    // デバッグ用
-    console.log('Formatted metadata:', metadata)
+    // スラッグが空の場合はIDを使用
+    if (!slug) {
+      slug = `post-${post.id}`
+    }
 
-    return metadata
+    console.log('Generated metadata:', { title, slug }) // デバッグ用
+
+    return {
+      id: post.id,
+      title,
+      description: post.properties.Description?.rich_text[0]?.plain_text || '',
+      date: post.properties.Date?.date?.start || '',
+      slug,
+      tags: post.properties.Tags?.multi_select?.map((tag: any) => tag.name) || [],
+      thumbnail: post.properties.Thumbnail?.files[0]?.file?.url || 
+                post.properties.Thumbnail?.files[0]?.external?.url || null
+    }
   } catch (error) {
     console.error('Error in getPageMetaData:', error)
-    console.error('Problem post:', post)
-    
-    // エラー時のデフォルト値を返す
+    // エラー時は必ずIDベースのスラッグを返す
     return {
-      id: post?.id || '',
-      title: 'Error loading post',
+      id: post.id || '',
+      title: post.properties?.Name?.title[0]?.plain_text || 'Error loading post',
       description: '',
       date: '',
-      slug: '',
+      slug: `post-${post.id}`,
       tags: [],
       thumbnail: null
     }
@@ -131,26 +141,96 @@ export const getPostsForTopPage = async () => {
 
 // 単一記事の取得
 export const getSinglePost = async (slug: string) => {
-  const response = await notion.databases.query({
-    database_id: config.notionDatabaseId,
-    filter: {
-      property: 'Slug',
-      formula: {
-        string: {
-          equals: slug,
+  try {
+    console.log('Searching for post with slug:', slug) // デバッグ用
+
+    // IDベースのスラッグかどうかをチェック
+    const isIdBasedSlug = slug.startsWith('post-')
+    const postId = isIdBasedSlug ? slug.replace('post-', '') : null
+
+    let response
+
+    if (postId) {
+      // IDで直接検索
+      try {
+        const page = await notion.pages.retrieve({
+          page_id: postId
+        })
+        response = { results: [page] }
+      } catch (error) {
+        console.error('Error retrieving page by ID:', error)
+        response = { results: [] }
+      }
+    } else {
+      // スラッグで検索
+      response = await notion.databases.query({
+        database_id: config.notionDatabaseId,
+        filter: {
+          and: [
+            {
+              property: 'Published',
+              checkbox: {
+                equals: true,
+              },
+            },
+            {
+              or: [
+                {
+                  property: 'Name',
+                  title: {
+                    equals: decodeURIComponent(slug),
+                  },
+                },
+                {
+                  property: 'Slug',
+                  formula: {
+                    string: {
+                      equals: slug,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
         },
-      },
-    },
-  })
+      })
+    }
 
-  const page = response.results[0]
-  const metadata = getPageMetaData(page)
-  const mdBlocks = await n2m.pageToMarkdown(page.id)
-  const mdString = n2m.toMarkdownString(mdBlocks)
+    console.log('Search results:', response.results) // デバッグ用
 
-  return {
-    metadata,
-    markdown: mdString,
+    if (!response.results.length) {
+      console.log('No post found with slug:', slug)
+      return null
+    }
+
+    const post = response.results[0]
+    
+    // ページの内容を取得
+    const blocks = await notion.blocks.children.list({
+      block_id: post.id,
+    })
+
+    return {
+      metadata: getPageMetaData(post),
+      content: blocks.results
+    }
+
+  } catch (error) {
+    console.error('Error in getSinglePost:', error)
+    throw error
+  }
+}
+
+// 記事コンテンツの取得
+const getPostContent = async (pageId: string) => {
+  try {
+    const blocks = await notion.blocks.children.list({
+      block_id: pageId,
+    })
+    return blocks.results
+  } catch (error) {
+    console.error('Error getting post content:', error)
+    return []
   }
 }
 

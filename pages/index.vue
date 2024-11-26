@@ -7,6 +7,9 @@
 
 <script setup lang="ts">
 import PostList from '~/components/PostList.vue'
+
+// トップページから記事一覧へリダイレクト
+navigateTo('/posts')
 </script>
 
 <style scoped>

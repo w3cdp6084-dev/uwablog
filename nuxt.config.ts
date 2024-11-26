@@ -35,8 +35,25 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    compatibilityDate: '2024-11-25'
+    compatibilityDate: '2024-11-25',
+    moduleSideEffects: ['reflect-metadata'],
   },
 
-  compatibilityDate: '2024-11-26'
+  compatibilityDate: '2024-11-26',
+
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ['punycode']
+      }
+    }
+  },
+
+  hooks: {
+    'builder:watch': (event, path) => {
+      if (process.env.NODE_ENV === 'development') {
+        process.env.NODE_NO_WARNINGS = '1'
+      }
+    }
+  }
 })

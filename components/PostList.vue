@@ -1,30 +1,41 @@
 <template>
   <div class="post-grid">
+    <div v-if="posts" style="display: none;">
+      Debug links: 
+      <div v-for="post in posts" :key="post.id">
+        {{ post.title }} -> /posts/{{ post.slug }}
+      </div>
+    </div>
+
     <article 
-      v-for="(post, index) in posts" 
-      :key="post?.id || index"
+      v-for="post in posts" 
+      :key="post.id"
       class="post-card"
     >
-      <div class="post-link">
+      <NuxtLink 
+        :to="`/posts/${post.slug}`" 
+        class="post-link"
+        @click="() => console.log('Clicking link to:', `/posts/${post.slug}`)"
+      >
         <div class="post-thumbnail">
           <img 
-            v-if="post?.thumbnail" 
+            v-if="post.thumbnail" 
             :src="post.thumbnail" 
-            :alt="post.title || ''"
+            :alt="post.title"
           />
           <div v-else class="no-image">No Image</div>
         </div>
         <div class="post-content">
           <div class="post-meta">
             <time 
-              v-if="post?.date"
+              v-if="post.date"
               :datetime="post.date"
             >
               {{ formatDate(post.date) }}
             </time>
             <div class="post-tags">
               <span 
-                v-for="tag in (post?.tags || [])" 
+                v-for="tag in post.tags" 
                 :key="tag" 
                 class="tag"
               >
@@ -32,10 +43,10 @@
               </span>
             </div>
           </div>
-          <h2 class="post-title">{{ post?.title || 'Untitled' }}</h2>
-          <p class="post-description">{{ post?.description || '' }}</p>
+          <h2 class="post-title">{{ post.title }}</h2>
+          <p class="post-description">{{ post.description }}</p>
         </div>
-      </div>
+      </NuxtLink>
     </article>
   </div>
 </template>
@@ -52,13 +63,18 @@ interface Post {
 }
 
 // APIからデータを取得
-const { data: posts } = await useFetch<Post[]>('/api/posts', {
-  default: () => []
-})
+const { data: posts, error } = await useFetch<Post[]>('/api/posts')
 
-// デバッグ用
 watchEffect(() => {
-  console.log('Posts data:', posts.value)
+  if (posts.value) {
+    console.log('Posts with slugs:', posts.value.map(p => ({
+      title: p.title,
+      slug: p.slug
+    })))
+  }
+  if (error.value) {
+    console.error('Fetch error:', error.value)
+  }
 })
 
 // 日付フォーマット
