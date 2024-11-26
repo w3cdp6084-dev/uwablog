@@ -1,25 +1,30 @@
 <template>
   <div class="post-grid">
     <article 
-      v-for="post in posts" 
-      :key="post.id"
+      v-for="(post, index) in posts" 
+      :key="post?.id || index"
       class="post-card"
     >
-      <NuxtLink :to="`/posts/${post.slug}`" class="post-link">
+      <div class="post-link">
         <div class="post-thumbnail">
           <img 
-            v-if="post.thumbnail" 
+            v-if="post?.thumbnail" 
             :src="post.thumbnail" 
-            :alt="post.title"
+            :alt="post.title || ''"
           />
           <div v-else class="no-image">No Image</div>
         </div>
         <div class="post-content">
           <div class="post-meta">
-            <time :datetime="post.date">{{ formatDate(post.date) }}</time>
+            <time 
+              v-if="post?.date"
+              :datetime="post.date"
+            >
+              {{ formatDate(post.date) }}
+            </time>
             <div class="post-tags">
               <span 
-                v-for="tag in post.tags" 
+                v-for="tag in (post?.tags || [])" 
                 :key="tag" 
                 class="tag"
               >
@@ -27,10 +32,10 @@
               </span>
             </div>
           </div>
-          <h2 class="post-title">{{ post.title }}</h2>
-          <p class="post-description">{{ post.description }}</p>
+          <h2 class="post-title">{{ post?.title || 'Untitled' }}</h2>
+          <p class="post-description">{{ post?.description || '' }}</p>
         </div>
-      </NuxtLink>
+      </div>
     </article>
   </div>
 </template>
@@ -47,11 +52,24 @@ interface Post {
 }
 
 // APIからデータを取得
-const { data: posts } = await useFetch<Post[]>('/api/posts')
+const { data: posts } = await useFetch<Post[]>('/api/posts', {
+  default: () => []
+})
+
+// デバッグ用
+watchEffect(() => {
+  console.log('Posts data:', posts.value)
+})
 
 // 日付フォーマット
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('ja-JP')
+  if (!dateString) return ''
+  try {
+    return new Date(dateString).toLocaleDateString('ja-JP')
+  } catch (error) {
+    console.error('Date formatting error:', error)
+    return ''
+  }
 }
 </script>
 
@@ -152,5 +170,14 @@ const formatDate = (dateString: string) => {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
+}
+
+.no-posts {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+  background: var(--bg-color);
+  border-radius: 8px;
+  margin: 1rem 0;
 }
 </style> 

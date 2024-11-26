@@ -1,9 +1,11 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
+
   css: [
     '@/assets/css/tailwind.css',
     '@/assets/css/global.css'
   ],
+
   app: {
     head: {
       script: [
@@ -19,17 +21,22 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   postcss: {
     plugins: {
       tailwindcss: {},
       autoprefixer: {},
     },
   },
+
   runtimeConfig: {
     notionApiKey: process.env.NOTION_API_KEY,
     notionDatabaseId: process.env.NOTION_DATABASE_ID
   },
+
   nitro: {
     compatibilityDate: '2024-11-25'
-  }
+  },
+
+  compatibilityDate: '2024-11-26'
 })
