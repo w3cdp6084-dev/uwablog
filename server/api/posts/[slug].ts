@@ -14,18 +14,18 @@ export default defineEventHandler(async (event) => {
     if (!post) {
       throw createError({
         statusCode: 404,
-        message: `Post not found: ${slug}`
+        message: `記事が見つかりません`,
+        fatal: true
       })
     }
 
     return post
 
-  } catch (error) {
-    console.error('Error in post handler:', error)
+  } catch (error: any) {
     throw createError({
-      statusCode: 500,
-      message: 'Failed to fetch post',
-      cause: error
+      statusCode: error.statusCode || 500,
+      message: error.message || 'Internal Server Error',
+      fatal: true
     })
   }
 }) 

@@ -1,5 +1,14 @@
 <template>
-  <div class="post-container">
+  <div v-if="pending" class="loading-container">
+    Loading...
+  </div>
+  <div v-else-if="error" class="error-container">
+    <!-- エラーの場合はエラーページコンポーネントに任せる -->
+    <NuxtErrorBoundary>
+      <error :error="error" />
+    </NuxtErrorBoundary>
+  </div>
+  <div v-else class="post-container">
     <article v-if="post" class="post-content">
       <header>
         <h1>{{ post.metadata.title }}</h1>
@@ -88,7 +97,18 @@
 
 <script setup lang="ts">
 const route = useRoute()
-const { data: post } = await useFetch(`/api/posts/${route.params.slug}`)
+const { data: post, error, pending } = await useFetch(`/api/posts/${route.params.slug}`, {
+  // エラーハンドリングの設定
+  onResponseError({ response }) {
+    if (response.status === 404) {
+      throw createError({
+        statusCode: 404,
+        message: '記事が見つかりません',
+        fatal: true
+      })
+    }
+  }
+})
 
 const formatDate = (dateString: string) => {
   if (!dateString) return ''
@@ -246,5 +266,18 @@ html {
   .post-container {
     grid-template-columns: 1fr;
   }
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error-container {
+  min-height: 50vh;
 }
 </style> 
