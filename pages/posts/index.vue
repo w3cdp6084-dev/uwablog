@@ -1,14 +1,9 @@
 <template>
   <div class="posts-page">
-    <h1>記事一覧</h1>
-    
-    <!-- フィルターコンポーネント -->
     <PostFilter
       :available-tags="availableTags"
       @search="handleSearch"
     />
-
-    <!-- 記事一覧 -->
     <PostList :posts="filteredPosts" />
   </div>
 </template>
@@ -87,7 +82,14 @@ const handleSearch = (filters: {
 .posts-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .posts-page {
+    padding: 1rem;
+  }
 }
 
 h1 {
