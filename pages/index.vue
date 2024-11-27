@@ -15,7 +15,14 @@
 </template>
 
 <script setup lang="ts">
-const { data: posts, pending } = await useFetch('/api/posts')
+// データ取得
+const { data: posts, pending, error } = await useFetch('/api/posts')
+
+// デバッグ用
+console.log('Fetched posts:', {
+  count: posts.value?.length,
+  data: posts.value
+})
 
 // 利用可能なタグを収集
 const availableTags = computed(() => {
@@ -27,8 +34,8 @@ const availableTags = computed(() => {
   return Array.from(tags)
 })
 
-// フィルター後の記事（初期値は空配列）
-const filteredPosts = ref<any[]>([])
+// フィルター後の記事
+const filteredPosts = ref(posts.value || [])
 
 // 初期表示時に全記事を設定
 watchEffect(() => {

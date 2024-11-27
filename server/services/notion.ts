@@ -2,6 +2,14 @@ import { Client } from '@notionhq/client'
 import { NotionToMarkdown } from 'notion-to-md'
 import { NUMBER_OF_POSTS_PER_PAGE } from '~/constants/constants'
 
+// 定数の定義を追加
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1秒
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 const config = useRuntimeConfig()
 
 const notion = new Client({
@@ -17,54 +25,41 @@ const getPageMetaData = (post: any) => {
       throw new Error('No properties found in post')
     }
 
-    // タイトルの取得
-    const title = post.properties.Name?.title[0]?.plain_text || 
-                 post.properties.Title?.title[0]?.plain_text || 
-                 'Untitled'
-
-    // Slugプロパティから取得を試みる
-    let slug = post.properties.Slug?.rich_text?.[0]?.plain_text || ''
-
-    // Slugが空の場合、タイトルからスラッグを生成
-    if (!slug) {
-      // 日本語の場合はローマ字に変換するか、IDを使用
-      if (/^[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\u3400-\u4dbf]+$/.test(title)) {
-        // 日本語の場合はIDベースのスラッグを使用
-        slug = `post-${post.id}`
-      } else {
-        // 英数字の場合は通常のスラッグ生成
-        slug = title
-          .toLowerCase()
-          .trim()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+    // サムネイル画像の取得方法を改善
+    const getThumbnailUrl = (thumbnail: any) => {
+      if (!thumbnail) return null
+      
+      // 外部URLの場合
+      if (thumbnail.type === 'external') {
+        return thumbnail.external.url
       }
+      
+      // Notionにアップロードされた画像の場合
+      if (thumbnail.type === 'file') {
+        // 永続的なURLを使用（もしくはプロキシを経由）
+        return thumbnail.file.url
+      }
+      
+      return null
     }
-
-    // スラッグが空の場合はIDを使用
-    if (!slug) {
-      slug = `post-${post.id}`
-    }
-
-    console.log('Generated metadata:', { title, slug }) // デバッグ用
 
     return {
       id: post.id,
-      title,
+      title: post.properties.Name?.title[0]?.plain_text || 
+             post.properties.Title?.title[0]?.plain_text || 
+             'Untitled',
       description: post.properties.Description?.rich_text[0]?.plain_text || '',
       date: post.properties.Date?.date?.start || '',
-      slug,
+      slug: post.properties.Slug?.rich_text[0]?.plain_text || `post-${post.id}`,
       tags: post.properties.Tags?.multi_select?.map((tag: any) => tag.name) || [],
-      thumbnail: post.properties.Thumbnail?.files[0]?.file?.url || 
-                post.properties.Thumbnail?.files[0]?.external?.url || null
+      // サムネイルの取得方法を変更
+      thumbnail: getThumbnailUrl(post.properties.Thumbnail?.files[0])
     }
   } catch (error) {
     console.error('Error in getPageMetaData:', error)
-    // エラー時は必ずIDベースのスラッグを返す
     return {
-      id: post.id || '',
-      title: post.properties?.Name?.title[0]?.plain_text || 'Error loading post',
+      id: post.id,
+      title: 'Error loading post',
       description: '',
       date: '',
       slug: `post-${post.id}`,
@@ -113,30 +108,56 @@ const getAllPosts = async () => {
 }
 
 // トップページ用の記事取得 - exportを追加
-export const getPostsForTopPage = async () => {
-  try {
-    const posts = await notion.databases.query({
-      database_id: config.notionDatabaseId,
-      page_size: NUMBER_OF_POSTS_PER_PAGE,
-      filter: {
-        property: 'Published',
-        checkbox: {
-          equals: true,
-        },
-      },
-      sorts: [
-        {
-          property: 'Date',
-          direction: 'descending',
-        },
-      ],
-    })
+export async function getPostsForTopPage() {
+  let lastError
 
-    return posts.results.map(post => getPageMetaData(post))
-  } catch (error) {
-    console.error('Failed to fetch posts:', error)
-    return []
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}: Initializing Notion client...`)
+      const notion = new Client({
+        auth: process.env.NOTION_API_KEY,
+      })
+
+      if (!process.env.NOTION_DATABASE_ID) {
+        throw new Error('NOTION_DATABASE_ID is not configured')
+      }
+
+      console.log('Fetching database...')
+      const response = await notion.databases.query({
+        database_id: process.env.NOTION_DATABASE_ID,
+        sorts: [
+          {
+            property: 'Date',
+            direction: 'descending',
+          },
+        ],
+      })
+
+      console.log('Database response:', {
+        results: response.results.length,
+        success: !!response.results
+      })
+
+      // 記事のメタデータを整形して返す
+      return response.results.map(post => getPageMetaData(post))
+
+    } catch (error: any) {
+      lastError = error
+      console.error(`Attempt ${attempt} failed:`, {
+        message: error.message,
+        code: error.code,
+        status: error.status
+      })
+
+      if (attempt < MAX_RETRIES) {
+        console.log(`Retrying in ${RETRY_DELAY}ms...`)
+        await delay(RETRY_DELAY)
+      }
+    }
   }
+
+  console.error('All retry attempts failed')
+  throw lastError
 }
 
 // 単一記事の取得
