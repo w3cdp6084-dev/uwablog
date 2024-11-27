@@ -1,50 +1,31 @@
 <template>
   <div class="post-grid">
-    <div v-if="posts" style="display: none;">
-      Debug links: 
-      <div v-for="post in posts" :key="post.id">
-        {{ post.title }} -> /posts/{{ post.slug }}
-      </div>
+    <!-- 検索結果が0件の場合 -->
+    <div v-if="posts.length === 0" class="no-results">
+      検索結果が見つかりませんでした
     </div>
-
+    
+    <!-- 記事一覧 -->
     <article 
       v-for="post in posts" 
       :key="post.id"
       class="post-card"
     >
-      <NuxtLink 
-        :to="`/posts/${post.slug}`" 
-        class="post-link"
-        @click="() => console.log('Clicking link to:', `/posts/${post.slug}`)"
-      >
-        <div class="post-thumbnail">
-          <img 
-            v-if="post.thumbnail" 
-            :src="post.thumbnail" 
-            :alt="post.title"
-          />
-          <div v-else class="no-image">No Image</div>
+      <NuxtLink :to="`/posts/${post.slug}`" class="post-link">
+        <div class="post-thumbnail" v-if="post.thumbnail">
+          <img :src="post.thumbnail" :alt="post.title">
         </div>
         <div class="post-content">
+          <h2 class="post-title">{{ post.title }}</h2>
+          <p class="post-description">{{ post.description }}</p>
           <div class="post-meta">
-            <time 
-              v-if="post.date"
-              :datetime="post.date"
-            >
-              {{ formatDate(post.date) }}
-            </time>
+            <time :datetime="post.date">{{ formatDate(post.date) }}</time>
             <div class="post-tags">
-              <span 
-                v-for="tag in post.tags" 
-                :key="tag" 
-                class="tag"
-              >
+              <span v-for="tag in post.tags" :key="tag" class="tag">
                 {{ tag }}
               </span>
             </div>
           </div>
-          <h2 class="post-title">{{ post.title }}</h2>
-          <p class="post-description">{{ post.description }}</p>
         </div>
       </NuxtLink>
     </article>
@@ -62,30 +43,13 @@ interface Post {
   thumbnail: string | null
 }
 
-// APIからデータを取得
-const { data: posts, error } = await useFetch<Post[]>('/api/posts')
+defineProps<{
+  posts: Post[]
+}>()
 
-watchEffect(() => {
-  if (posts.value) {
-    console.log('Posts with slugs:', posts.value.map(p => ({
-      title: p.title,
-      slug: p.slug
-    })))
-  }
-  if (error.value) {
-    console.error('Fetch error:', error.value)
-  }
-})
-
-// 日付フォーマット
 const formatDate = (dateString: string) => {
   if (!dateString) return ''
-  try {
-    return new Date(dateString).toLocaleDateString('ja-JP')
-  } catch (error) {
-    console.error('Date formatting error:', error)
-    return ''
-  }
+  return new Date(dateString).toLocaleDateString('ja-JP')
 }
 </script>
 
@@ -96,16 +60,24 @@ const formatDate = (dateString: string) => {
   gap: 2rem;
 }
 
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
 .post-card {
-  background: var(--bg-color);
+  background: white;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.3s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
 }
 
 .post-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 .post-link {
@@ -114,10 +86,8 @@ const formatDate = (dateString: string) => {
 }
 
 .post-thumbnail {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  background: var(--menu-bg);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
 }
 
 .post-thumbnail img {
@@ -126,74 +96,43 @@ const formatDate = (dateString: string) => {
   object-fit: cover;
 }
 
-.no-image {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color);
-  opacity: 0.5;
-}
-
 .post-content {
   padding: 1.5rem;
 }
 
-.post-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+.post-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+}
+
+.post-description {
   font-size: 0.875rem;
-  color: var(--text-color);
-  opacity: 0.8;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.post-meta {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
 }
 
 .post-tags {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .tag {
-  padding: 0.2rem 0.5rem;
-  background: var(--menu-bg);
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
-}
-
-.post-title {
-  margin: 0 0 1rem;
-  font-size: 1.25rem;
-  color: var(--text-color);
-  line-height: 1.4;
-}
-
-.post-description {
-  font-size: 0.875rem;
-  color: var(--text-color);
-  opacity: 0.8;
-  line-height: 1.6;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  .post-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-.no-posts {
-  text-align: center;
-  padding: 2rem;
-  color: var(--text-color);
-  background: var(--bg-color);
-  border-radius: 8px;
-  margin: 1rem 0;
 }
 </style> 
