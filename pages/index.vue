@@ -4,12 +4,33 @@
       :available-tags="availableTags"
       @search="handleSearch"
     />
+    
+    <!-- スケルトンローディング -->
+    <div v-if="pending" class="post-grid">
+      <div v-for="n in 6" :key="n" class="post-skeleton">
+        <div class="skeleton-thumbnail"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-meta">
+            <div class="skeleton-date"></div>
+            <div class="skeleton-tags">
+              <div class="skeleton-tag" v-for="t in 3" :key="t"></div>
+            </div>
+          </div>
+          <div class="skeleton-description"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 記事一覧 -->
     <PostList 
-      v-if="posts" 
+      v-else-if="posts" 
       :posts="filteredPosts" 
     />
-    <div v-else class="loading">
-      Loading...
+
+    <!-- エラー表示 -->
+    <div v-else-if="error" class="error">
+      {{ error.message }}
     </div>
   </div>
 </template>
@@ -90,15 +111,105 @@ const handleSearch = (filters: {
   width: 100%;
 }
 
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
+/* スケルトンアニメーション */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
+/* スケルトングリッド */
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* スケルトンカード */
+.post-skeleton {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.skeleton-base {
+  background: linear-gradient(90deg, 
+    #f0f0f0 25%, 
+    #e0e0e0 50%, 
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-thumbnail {
+  @extend .skeleton-base;
+  width: 100%;
+  height: 200px;
+}
+
+.skeleton-content {
+  padding: 1rem;
+}
+
+.skeleton-title {
+  @extend .skeleton-base;
+  height: 24px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  margin: 0.5rem 0;
+}
+
+.skeleton-date {
+  @extend .skeleton-base;
+  width: 80px;
+  height: 16px;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.skeleton-tag {
+  @extend .skeleton-base;
+  width: 60px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.skeleton-description {
+  @extend .skeleton-base;
+  height: 60px;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+/* レスポンシブ対応 */
 @media (max-width: 768px) {
+  .post-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .posts-page {
     padding: 1rem;
   }
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc3545;
 }
 </style>
