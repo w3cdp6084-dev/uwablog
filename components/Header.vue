@@ -1,6 +1,12 @@
 <template>
   <div class="site-wrapper">
-    <header class="l-header">
+    <header 
+      class="l-header"
+      :class="{ 
+        'is-hidden': !isVisible,
+        'is-scrolled': isScrolled 
+      }"
+    >
       <div class="logo">
         <a href="/">
           <img src="https://placehold.co/200x50" alt="Logo" />
@@ -60,10 +66,32 @@ export default {
   data() {
     return {
       isMenuOpen: false,
-      isToggling: false
+      isToggling: false,
+      isVisible: true,
+      isScrolled: false,
+      lastScrollPosition: 0
     }
   },
+  mounted() {
+    window.addEventListener('scroll', this.handleScroll, { passive: true })
+  },
+  beforeDestroy() {
+    window.removeEventListener('scroll', this.handleScroll)
+  },
   methods: {
+    handleScroll() {
+      const currentScrollPosition = window.scrollY
+      
+      // スクロール方向の判定
+      this.isVisible = 
+        currentScrollPosition < this.lastScrollPosition || // 上にスクロール
+        currentScrollPosition < 50 // または最上部付近
+
+      // スクロール位置による背景効果の判定
+      this.isScrolled = currentScrollPosition > 50
+
+      this.lastScrollPosition = currentScrollPosition
+    },
     toggleMenu() {
       if (this.isToggling) return
       this.isToggling = true
@@ -100,6 +128,15 @@ export default {
   padding: 0 1rem;
   z-index: 50;
   background-color: var(--bg-color);
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.l-header.is-hidden {
+  transform: translateY(-100%);
+}
+
+.l-header.is-scrolled {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header-right {
