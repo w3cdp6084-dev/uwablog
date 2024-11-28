@@ -3,7 +3,6 @@
     Loading...
   </div>
   <div v-else-if="error" class="error-container">
-    <!-- エラーの場合はエラーページコンポーネントに任せる -->
     <NuxtErrorBoundary>
       <error :error="error" />
     </NuxtErrorBoundary>
@@ -84,6 +83,36 @@
             </figcaption>
           </figure>
         </div>
+
+        <div class="share-section">
+          <p class="share-text">この記事をシェアする</p>
+          <div class="share-buttons">
+            <a 
+              :href="shareUrls.twitter" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="share-button twitter"
+            >
+              <span>X（Twitter）でシェア</span>
+            </a>
+            
+            <a 
+              :href="shareUrls.facebook" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="share-button facebook"
+            >
+              <span>Facebookでシェア</span>
+            </a>
+            
+            <button 
+              @click="copyUrl" 
+              class="share-button copy"
+            >
+              <span>URLをコピー</span>
+            </button>
+          </div>
+        </div>
       </div>
     </article>
 
@@ -98,7 +127,6 @@
 <script setup lang="ts">
 const route = useRoute()
 const { data: post, error, pending } = await useFetch(`/api/posts/${route.params.slug}`, {
-  // エラーハンドリングの設定
   onResponseError({ response }) {
     if (response.status === 404) {
       throw createError({
@@ -110,12 +138,32 @@ const { data: post, error, pending } = await useFetch(`/api/posts/${route.params
   }
 })
 
+const currentUrl = computed(() => {
+  if (process.client) {
+    return window.location.href
+  }
+  return ''
+})
+
+const shareUrls = computed(() => ({
+  twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(post.value?.metadata.title || '')}&url=${encodeURIComponent(currentUrl.value)}`,
+  facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl.value)}`,
+}))
+
+const copyUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(currentUrl.value)
+    alert('URLをコピーしました！')
+  } catch (err) {
+    console.error('URLのコピーに失敗しました:', err)
+  }
+}
+
 const formatDate = (dateString: string) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
 }
 
-// 見出しデータの抽出
 const headings = computed(() => {
   if (!post.value?.content) return []
   
@@ -127,11 +175,6 @@ const headings = computed(() => {
       const id = `heading-${block.id}`
       return { id, text, level }
     })
-})
-
-// デバッグ用
-watchEffect(() => {
-  console.log('Headings:', headings.value)
 })
 </script>
 
@@ -279,5 +322,64 @@ html {
 
 .error-container {
   min-height: 50vh;
+}
+
+.share-section {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eaeaea;
+}
+
+.share-text {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.share-button:hover {
+  opacity: 0.8;
+}
+
+.twitter {
+  background-color: #000;
+}
+
+.facebook {
+  background-color: #1877f2;
+}
+
+.copy {
+  background-color: #666;
+}
+
+@media (max-width: 768px) {
+  .share-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .share-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style> 
