@@ -1,10 +1,10 @@
 <template>
-  <div class="app-wrapper">
-    <Header />
-    <main class="main-content">
-      <NuxtPage />
-    </main>
-    <Footer />
+  <div>
+    <nav>
+      <NuxtLink to="/">Home</NuxtLink>
+      <NuxtLink to="/about">About</NuxtLink>
+    </nav>
+    <NuxtPage />
   </div>
 </template>
 
