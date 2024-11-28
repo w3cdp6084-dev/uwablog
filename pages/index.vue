@@ -1,215 +1,256 @@
 <template>
-  <div class="posts-page">
-    <PostFilter
-      :available-tags="availableTags"
-      @search="handleSearch"
-    />
-    
-    <!-- スケルトンローディング -->
-    <div v-if="pending" class="post-grid">
-      <div v-for="n in 6" :key="n" class="post-skeleton">
-        <div class="skeleton-thumbnail"></div>
-        <div class="skeleton-content">
-          <div class="skeleton-title"></div>
-          <div class="skeleton-meta">
-            <div class="skeleton-date"></div>
-            <div class="skeleton-tags">
-              <div class="skeleton-tag" v-for="t in 3" :key="t"></div>
+  <div class="container">
+    <div class="posts-grid">
+      <NuxtLink 
+        v-for="post in currentPosts" 
+        :key="post.slug"
+        :to="`/posts/${post.slug}`"
+        class="post-card"
+      >
+        <img 
+          v-if="post.thumbnail" 
+          :src="post.thumbnail" 
+          :alt="post.title"
+          class="post-thumbnail"
+        >
+        <div class="post-content">
+          <h2 class="post-title">{{ post.title }}</h2>
+          <div class="post-meta">
+            <time :datetime="post.date">{{ formatDate(post.date) }}</time>
+            <div class="post-tags">
+              <span v-for="tag in post.tags" :key="tag" class="tag">
+                {{ tag }}
+              </span>
             </div>
           </div>
-          <div class="skeleton-description"></div>
+          <p v-if="post.description" class="post-description">
+            {{ post.description }}
+          </p>
         </div>
-      </div>
+      </NuxtLink>
     </div>
 
-    <!-- 記事一覧 -->
-    <PostList 
-      v-else-if="posts" 
-      :posts="filteredPosts" 
-    />
+    <!-- ページネーション -->
+    <div v-if="totalPages > 1" class="pagination">
+      <button 
+        :disabled="currentPage === 1"
+        @click="currentPage--"
+        class="pagination-button"
+      >
+        前のページ
+      </button>
+      
+      <div class="page-numbers">
+        <button 
+          v-for="page in totalPages" 
+          :key="page"
+          :class="['page-number', { active: page === currentPage }]"
+          @click="currentPage = page"
+        >
+          {{ page }}
+        </button>
+      </div>
 
-    <!-- エラー表示 -->
-    <div v-else-if="error" class="error">
-      {{ error.message }}
+      <button 
+        :disabled="currentPage === totalPages"
+        @click="currentPage++"
+        class="pagination-button"
+      >
+        次のページ
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// データ取得
-const { data: posts, pending, error } = await useFetch('/api/posts')
+const { data: posts } = await useFetch('/api/posts')
 
-// デバッグ用
-console.log('Fetched posts:', {
-  count: posts.value?.length,
-  data: posts.value
+// ページネーションの設定
+const postsPerPage = 6 // 1ページあたりの記事数を6に変更
+const currentPage = ref(1)
+
+// 総ページ数の計算
+const totalPages = computed(() => {
+  if (!posts.value) return 0
+  return Math.ceil(posts.value.length / postsPerPage)
 })
 
-// 利用可能なタグを収集
-const availableTags = computed(() => {
+// 現在のページの記事を取得
+const currentPosts = computed(() => {
   if (!posts.value) return []
-  const tags = new Set<string>()
-  posts.value.forEach(post => {
-    post.tags?.forEach(tag => tags.add(tag))
-  })
-  return Array.from(tags)
+  const start = (currentPage.value - 1) * postsPerPage
+  const end = start + postsPerPage
+  return posts.value.slice(start, end)
 })
 
-// フィルター後の記事
-const filteredPosts = ref(posts.value || [])
+// 日付フォーマット
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleDateString('ja-JP')
+}
 
-// 初期表示時に全記事を設定
+// URLのクエリパラメータと同期
+const route = useRoute()
+const router = useRouter()
+
+// URLからページ番号を取得
 watchEffect(() => {
-  if (posts.value) {
-    filteredPosts.value = posts.value
+  const page = Number(route.query.page) || 1
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
   }
 })
 
-// 検索処理
-const handleSearch = (filters: {
-  query: string,
-  tags: string[],
-  date: string
-}) => {
-  if (!posts.value) return
-
-  filteredPosts.value = posts.value.filter(post => {
-    const matchesQuery = !filters.query || 
-      post.title.toLowerCase().includes(filters.query.toLowerCase()) ||
-      post.description?.toLowerCase().includes(filters.query.toLowerCase())
-
-    const matchesTags = filters.tags.length === 0 || 
-      filters.tags.every(tag => post.tags?.includes(tag))
-
-    let matchesDate = true
-    if (filters.date) {
-      const postDate = new Date(post.date)
-      const now = new Date()
-      switch (filters.date) {
-        case 'week':
-          matchesDate = now.getTime() - postDate.getTime() <= 7 * 24 * 60 * 60 * 1000
-          break
-        case 'month':
-          matchesDate = now.getTime() - postDate.getTime() <= 30 * 24 * 60 * 60 * 1000
-          break
-        case 'year':
-          matchesDate = now.getTime() - postDate.getTime() <= 365 * 24 * 60 * 60 * 1000
-          break
-      }
+// ページ変更時にURLを更新
+watch(currentPage, (newPage) => {
+  router.push({
+    query: {
+      ...route.query,
+      page: newPage === 1 ? undefined : newPage.toString()
     }
-
-    return matchesQuery && matchesTags && matchesDate
   })
-}
+})
 </script>
 
 <style scoped>
-.posts-page {
+.container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
-  width: 100%;
+  padding: 2rem;
 }
 
-/* スケルトンアニメーション */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* スケルトングリッド */
-.post-grid {
+.posts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
-  margin-top: 2rem;
+  margin-bottom: 3rem;
 }
 
-/* スケルトンカード */
-.post-skeleton {
-  background: white;
+.post-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
   border-radius: 8px;
   overflow: hidden;
+  transition: transform 0.2s;
+  background: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.skeleton-base {
-  background: linear-gradient(90deg, 
-    #f0f0f0 25%, 
-    #e0e0e0 50%, 
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.post-card:hover {
+  transform: translateY(-3px);
 }
 
-.skeleton-thumbnail {
-  @extend .skeleton-base;
+.post-thumbnail {
   width: 100%;
   height: 200px;
+  object-fit: cover;
 }
 
-.skeleton-content {
-  padding: 1rem;
+.post-content {
+  padding: 1.5rem;
 }
 
-.skeleton-title {
-  @extend .skeleton-base;
-  height: 24px;
+.post-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.post-meta {
+  font-size: 0.875rem;
+  color: #666;
   margin-bottom: 1rem;
-  border-radius: 4px;
 }
 
-.skeleton-meta {
-  margin: 0.5rem 0;
-}
-
-.skeleton-date {
-  @extend .skeleton-base;
-  width: 80px;
-  height: 16px;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.skeleton-tags {
+.post-tags {
   display: flex;
   gap: 0.5rem;
-  margin: 0.5rem 0;
+  margin-top: 0.5rem;
 }
 
-.skeleton-tag {
-  @extend .skeleton-base;
-  width: 60px;
-  height: 24px;
+.tag {
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
+  font-size: 0.75rem;
 }
 
-.skeleton-description {
-  @extend .skeleton-base;
-  height: 60px;
+.post-description {
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ページネーションのスタイル */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  margin-top: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* レスポンシブ対応 */
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-button:not(:disabled):hover {
+  background: #f5f5f5;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-number:hover {
+  background: #f5f5f5;
+}
+
+.page-number.active {
+  background: #000;
+  color: white;
+  border-color: #000;
+}
+
+/* モバイル対応 */
 @media (max-width: 768px) {
-  .post-grid {
+  .posts-grid {
     grid-template-columns: 1fr;
   }
-  
-  .posts-page {
-    padding: 1rem;
-  }
-}
 
-.error {
-  text-align: center;
-  padding: 2rem;
-  color: #dc3545;
+  .page-numbers {
+    display: none;
+  }
+
+  .pagination {
+    gap: 0.5rem;
+  }
 }
 </style>
