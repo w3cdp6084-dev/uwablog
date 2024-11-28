@@ -1,12 +1,15 @@
 <template>
   <div>
-    <nav>
-      <NuxtLink to="/">Home</NuxtLink>
-      <NuxtLink to="/about">About</NuxtLink>
-    </nav>
+    <Header />
     <NuxtPage />
+    <Footer />
   </div>
 </template>
+
+<script setup>
+import Header from '@/components/Header.vue';
+import Footer from '@/components/Footer.vue';
+</script>
 
 <style>
 .app-wrapper {
@@ -19,8 +22,3 @@
   flex: 1;
 }
 </style>
-
-<script setup>
-import Header from '@/components/Header.vue';
-import Footer from '@/components/Footer.vue';
-</script>
