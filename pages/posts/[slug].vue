@@ -113,6 +113,29 @@
             </button>
           </div>
         </div>
+
+        <div v-if="relatedPosts?.length" class="related-posts">
+          <h2 class="related-title">関連記事</h2>
+          <div class="related-grid">
+            <NuxtLink 
+              v-for="relatedPost in relatedPosts" 
+              :key="relatedPost.slug"
+              :to="`/posts/${relatedPost.slug}`"
+              class="related-post"
+            >
+              <img 
+                v-if="relatedPost.thumbnail" 
+                :src="relatedPost.thumbnail" 
+                :alt="relatedPost.title"
+                class="related-thumbnail"
+              >
+              <div class="related-content">
+                <h3 class="related-post-title">{{ relatedPost.title }}</h3>
+                <time class="related-date">{{ formatDate(relatedPost.date) }}</time>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
       </div>
     </article>
 
@@ -175,6 +198,27 @@ const headings = computed(() => {
       const id = `heading-${block.id}`
       return { id, text, level }
     })
+})
+
+const relatedPosts = ref([])
+
+console.log('Current post tags:', post.value?.metadata.tags)
+
+watchEffect(async () => {
+  if (post.value?.metadata.tags?.[0]) {
+    try {
+      const { data } = await useFetch('/api/posts/related', {
+        query: {
+          tag: post.value.metadata.tags[0],
+          currentSlug: route.params.slug
+        }
+      })
+      console.log('Related posts:', data.value)
+      relatedPosts.value = data.value
+    } catch (err) {
+      console.error('Failed to fetch related posts:', err)
+    }
+  }
 })
 </script>
 
@@ -380,6 +424,65 @@ html {
   .share-button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+.related-posts {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eaeaea;
+}
+
+.related-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.related-post {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s;
+}
+
+.related-post:hover {
+  transform: translateY(-3px);
+}
+
+.related-thumbnail {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.related-post-title {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.related-date {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .related-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .related-thumbnail {
+    height: 200px;
   }
 }
 </style> 
