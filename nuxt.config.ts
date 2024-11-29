@@ -1,6 +1,16 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  modules: [
+    ['@pinia/nuxt', {
+      autoImports: ['defineStore', 'storeToRefs']
+    }]
+  ],
+
+  imports: {
+    dirs: ['stores']
+  },
+
   css: [
     '@/assets/css/tailwind.css',
     '@/assets/css/global.css'
@@ -55,5 +65,5 @@ export default defineNuxtConfig({
         process.env.NODE_NO_WARNINGS = '1'
       }
     }
-  }
+  },
 })

@@ -1,16 +1,8 @@
 <template>
-  <div v-if="pending" class="loading-container">
-    Loading...
-  </div>
-  <div v-else-if="error" class="error-container">
-    <NuxtErrorBoundary>
-      <error :error="error" />
-    </NuxtErrorBoundary>
-  </div>
-  <div v-else class="post-container">
-    <article v-if="post" class="post-content">
-      <header>
-        <h1>{{ post.metadata.title }}</h1>
+  <article class="post-container">
+    <div class="post-main">
+      <header class="post-header">
+        <h1 class="post-title">{{ post.metadata.title }}</h1>
         <div class="post-meta">
           <time v-if="post.metadata.date" :datetime="post.metadata.date">
             {{ formatDate(post.metadata.date) }}
@@ -26,8 +18,13 @@
       <div v-if="post.metadata.thumbnail" class="thumbnail">
         <img :src="post.metadata.thumbnail" :alt="post.metadata.title">
       </div>
-
-      <div class="content">
+      <div class="mobile-toc-wrapper">
+          <TableOfContents 
+            v-if="headings.length > 0"
+            :headings="headings" 
+          />
+        </div>
+      <div class="post-content">
         <div v-for="block in post.content" :key="block.id" class="block">
           <p v-if="block.type === 'paragraph'" class="paragraph">
             {{ block.paragraph.rich_text?.[0]?.plain_text || '' }}
@@ -83,7 +80,6 @@
             </figcaption>
           </figure>
         </div>
-
         <div class="share-section">
           <p class="share-text">この記事をシェアする</p>
           <div class="share-buttons">
@@ -137,14 +133,14 @@
           </div>
         </div>
       </div>
-    </article>
+    </div>
 
     <TableOfContents 
       v-if="headings.length > 0"
       :headings="headings" 
-      class="toc-container"
+      class="post-toc desktop-only"
     />
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -224,37 +220,65 @@ watchEffect(async () => {
 
 <style scoped>
 .post-container {
-  display: grid;
-  grid-template-columns: 1fr 250px;
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.post-content {
   max-width: 800px;
+  margin: 80px auto 40px;
+  padding: 2rem;
+  position: relative;
 }
 
-.toc-container {
-  display: none; /* モバイルでは非表示 */
+.post-main {
+  width: 100%;
 }
 
-/* デスクトップサイズで目次を表示 */
-@media (min-width: 1024px) {
-  .toc-container {
+.post-header {
+  margin-bottom: 2rem;
+}
+
+.post-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.post-meta {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.post-toc {
+  position: absolute;
+  top: 2rem;
+  left: 100%;
+  margin-left: 2rem;
+}
+
+.mobile-toc-wrapper {
+  display: none;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 1200px) {
+  .post-container {
+    padding: 1rem;
+  }
+
+  .post-title {
+    font-size: 1.75rem;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-toc-wrapper {
     display: block;
   }
 }
 
-/* 見出し要素のスタイル調整 */
-:deep(.heading-1),
-:deep(.heading-2),
-:deep(.heading-3) {
-  scroll-margin-top: 80px; /* 固定ヘッダーの高さに応じて調整 */
-}
-
-.content {
+.post-content {
   margin-top: 2rem;
 }
 
@@ -347,12 +371,6 @@ watchEffect(async () => {
 /* スムーススクロールの設定 */
 html {
   scroll-behavior: smooth;
-}
-
-@media (max-width: 1023px) {
-  .post-container {
-    grid-template-columns: 1fr;
-  }
 }
 
 .loading-container {

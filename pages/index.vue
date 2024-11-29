@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
     <div class="posts-grid">
       <NuxtLink 
         v-for="post in currentPosts" 
@@ -110,6 +110,12 @@ watch(currentPage, (newPage) => {
     }
   })
 })
+
+// メニューの状態を取得
+const { isMenuOpen } = useMenuStore() // Pinia store を使用する場合
+
+// または、provide/inject を使用する場合
+// const isMenuOpen = inject('isMenuOpen', ref(false))
 </script>
 
 <style scoped>
@@ -117,6 +123,11 @@ watch(currentPage, (newPage) => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  transition: transform 0.3s ease;
+}
+
+.container.is-menu-open {
+  transform: translateX(-300px); /* PCサイズのメニュー幅 */
 }
 
 .posts-grid {
@@ -251,6 +262,10 @@ watch(currentPage, (newPage) => {
 
   .pagination {
     gap: 0.5rem;
+  }
+
+  .container.is-menu-open {
+    transform: translateX(-80vw); /* モバイルサイズのメニュー幅 */
   }
 }
 </style>

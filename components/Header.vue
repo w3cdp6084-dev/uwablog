@@ -1,5 +1,5 @@
 <template>
-  <div class="site-wrapper">
+
     <header 
       class="l-header"
       :class="{ 
@@ -26,17 +26,6 @@
       </div>
     </header>
 
-    <main class="main-content" :class="{ 'is-menu-open': isMenuOpen }">
-      <div class="test-content">
-        <h1>メインコンテンツ</h1>
-        <p>これはテスト用のコンテンツです。メニューを開くと左にスライドします。</p>
-        <div class="test-box"></div>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-        <div class="test-box"></div>
-        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-      </div>
-    </main>
-
     <div class="menu" :class="{ 'is-open': isMenuOpen }">
       <nav class="menu-inner">
         <ul class="menu-list">
@@ -53,61 +42,57 @@
       :class="{ 'is-visible': isMenuOpen }"
       @click="closeMenu"
     ></div>
-  </div>
 </template>
 
-<script>
+<script setup>
+import { useMenuStore } from '~/stores/menu'
 import ThemeToggle from './ThemeToggle.vue'
 
-export default {
-  components: {
-    ThemeToggle
-  },
-  data() {
-    return {
-      isMenuOpen: false,
-      isToggling: false,
-      isVisible: true,
-      isScrolled: false,
-      lastScrollPosition: 0
-    }
-  },
-  mounted() {
-    window.addEventListener('scroll', this.handleScroll, { passive: true })
-  },
-  beforeDestroy() {
-    window.removeEventListener('scroll', this.handleScroll)
-  },
-  methods: {
-    handleScroll() {
-      const currentScrollPosition = window.scrollY
-      
-      // スクロール方向の判定
-      this.isVisible = 
-        currentScrollPosition < this.lastScrollPosition || // 上にスクロール
-        currentScrollPosition < 50 // または最上部付近
+const menuStore = useMenuStore()
+const isVisible = ref(true)
+const isScrolled = ref(false)
+const lastScrollPosition = ref(0)
+const isToggling = ref(false)
 
-      // スクロール位置による背景効果の判定
-      this.isScrolled = currentScrollPosition > 50
+// スクロール検出
+const handleScroll = () => {
+  const currentScrollPosition = window.scrollY
+  
+  isVisible.value = 
+    currentScrollPosition < lastScrollPosition.value || 
+    currentScrollPosition < 50
 
-      this.lastScrollPosition = currentScrollPosition
-    },
-    toggleMenu() {
-      if (this.isToggling) return
-      this.isToggling = true
-      
-      this.isMenuOpen = !this.isMenuOpen
-      console.log('Menu state:', this.isMenuOpen)
-      
-      setTimeout(() => {
-        this.isToggling = false
-      }, 300)
-    },
-    closeMenu() {
-      this.isMenuOpen = false;
-    }
-  }
+  isScrolled.value = currentScrollPosition > 50
+
+  lastScrollPosition.value = currentScrollPosition
 }
+
+const toggleMenu = () => {
+  if (isToggling.value) return
+  isToggling.value = true
+  
+  menuStore.toggleMenu()
+  console.log('Menu state:', menuStore.isMenuOpen)
+  
+  setTimeout(() => {
+    isToggling.value = false
+  }, 300)
+}
+
+const closeMenu = () => {
+  menuStore.closeMenu()
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// メニューの状態をストアから取得
+const isMenuOpen = computed(() => menuStore.isMenuOpen)
 </script>
 
 <style scoped>
