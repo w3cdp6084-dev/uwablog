@@ -190,7 +190,7 @@ const isMenuOpen = computed(() => menuStore.isMenuOpen)
   right: 0;
   width: 300px;
   height: 100vh;
-  background-color: var(--menu-bg);
+  background-color: var(--bg-color);
   transform: translateX(100%);
   transition: transform 0.3s;
   z-index: 40;
