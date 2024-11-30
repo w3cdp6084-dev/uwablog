@@ -1,5 +1,12 @@
 <template>
   <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
+    <!-- 検索フィルター -->
+    <PostFilter 
+      :available-tags="availableTags"
+      @search="handleSearch"
+    />
+
+    <!-- 記事一覧 -->
     <div class="posts-grid">
       <NuxtLink 
         v-for="post in currentPosts" 
@@ -62,29 +69,70 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
+// データフェッチ
 const { data: posts } = await useFetch('/api/posts')
 
-// ページネーションの設定
-const postsPerPage = 6 // 1ページあたりの記事数を6に変更
+// 既存のコード
+const postsPerPage = 6
 const currentPage = ref(1)
+
+// 利用可能なタグを取得
+const availableTags = computed(() => {
+  if (!posts.value) return []
+  return [...new Set(posts.value.flatMap(post => post.tags || []))]
+})
+
+// 検索フィルターの状態
+const searchFilters = ref({
+  query: '',
+  tags: []
+})
+
+// フィルタリングされた記事
+const filteredPosts = computed(() => {
+  if (!posts.value) return []
+  
+  return posts.value.filter(post => {
+    // キーワード検索
+    if (searchFilters.value.query) {
+      const query = searchFilters.value.query.toLowerCase()
+      const matchesTitle = post.title.toLowerCase().includes(query)
+      const matchesDescription = post.description?.toLowerCase().includes(query)
+      if (!matchesTitle && !matchesDescription) return false
+    }
+
+    // タグフィルター
+    if (searchFilters.value.tags.length > 0) {
+      if (!searchFilters.value.tags.every(tag => post.tags?.includes(tag))) {
+        return false
+      }
+    }
+
+    return true
+  })
+})
+
+// 検索ハンドラー
+const handleSearch = (filters) => {
+  searchFilters.value = filters
+  currentPage.value = 1 // 検索時にページを1に戻す
+}
+
+// ページネーション用の記事取得
+const currentPosts = computed(() => {
+  const start = (currentPage.value - 1) * postsPerPage
+  const end = start + postsPerPage
+  return filteredPosts.value.slice(start, end)
+})
 
 // 総ページ数の計算
 const totalPages = computed(() => {
-  if (!posts.value) return 0
-  return Math.ceil(posts.value.length / postsPerPage)
-})
-
-// 現在のページの記事を取得
-const currentPosts = computed(() => {
-  if (!posts.value) return []
-  const start = (currentPage.value - 1) * postsPerPage
-  const end = start + postsPerPage
-  return posts.value.slice(start, end)
+  return Math.ceil(filteredPosts.value.length / postsPerPage)
 })
 
 // 日付フォーマット
-const formatDate = (dateString: string) => {
+const formatDate = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
 }
@@ -112,10 +160,7 @@ watch(currentPage, (newPage) => {
 })
 
 // メニューの状態を取得
-const { isMenuOpen } = useMenuStore() // Pinia store を使用する場合
-
-// または、provide/inject を使用する場合
-// const isMenuOpen = inject('isMenuOpen', ref(false))
+const { isMenuOpen } = useMenuStore()
 </script>
 
 <style scoped>
