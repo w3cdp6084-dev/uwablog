@@ -106,7 +106,7 @@ const isMenuOpen = computed(() => menuStore.isMenuOpen)
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 100px;
   display: flex;
   justify-content: space-between;
   align-items: center;

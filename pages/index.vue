@@ -1,13 +1,17 @@
 <template>
-  <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
-    <!-- 検索フィルター -->
+  <div class="container">
     <PostFilter 
       :available-tags="availableTags"
       @search="handleSearch"
+      @sort="handleSort"
+      @viewChange="handleViewChange"
     />
-
+    
     <!-- 記事一覧 -->
-    <div class="posts-grid">
+    <div 
+      class="posts-container"
+      :class="viewMode"
+    >
       <NuxtLink 
         v-for="post in currentPosts" 
         :key="post.slug"
@@ -46,18 +50,9 @@
       >
         前のページ
       </button>
-      
-      <div class="page-numbers">
-        <button 
-          v-for="page in totalPages" 
-          :key="page"
-          :class="['page-number', { active: page === currentPage }]"
-          @click="currentPage = page"
-        >
-          {{ page }}
-        </button>
-      </div>
-
+      <span class="pagination-info">
+        {{ currentPage }} / {{ totalPages }}
+      </span>
       <button 
         :disabled="currentPage === totalPages"
         @click="currentPage++"
@@ -119,11 +114,33 @@ const handleSearch = (filters) => {
   currentPage.value = 1 // 検索時にページを1に戻す
 }
 
-// ページネーション用の記事取得
+// 並び替えの状態
+const sortOrder = ref('newest')
+
+// 並び替えを適用した記事一覧
+const sortedPosts = computed(() => {
+  if (!filteredPosts.value) return []
+  
+  return [...filteredPosts.value].sort((a, b) => {
+    const dateA = new Date(a.date)
+    const dateB = new Date(b.date)
+    
+    return sortOrder.value === 'newest' 
+      ? dateB - dateA  // 最新順
+      : dateA - dateB  // 古い順
+  })
+})
+
+// 並び替えハンドラー
+const handleSort = (order) => {
+  sortOrder.value = order
+}
+
+// ページネーション用の記事取得を sortedPosts に変更
 const currentPosts = computed(() => {
   const start = (currentPage.value - 1) * postsPerPage
   const end = start + postsPerPage
-  return filteredPosts.value.slice(start, end)
+  return sortedPosts.value.slice(start, end)
 })
 
 // 総ページ数の計算
@@ -161,12 +178,20 @@ watch(currentPage, (newPage) => {
 
 // メニューの状態を取得
 const { isMenuOpen } = useMenuStore()
+
+// 表示モードの状態
+const viewMode = ref('grid')
+
+// 表示モード変更ハンドラー
+const handleViewChange = (mode) => {
+  viewMode.value = mode
+}
 </script>
 
 <style scoped>
 .container {
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 120px auto 0; 
   padding: 2rem;
   transition: transform 0.3s ease;
 }
@@ -175,75 +200,55 @@ const { isMenuOpen } = useMenuStore()
   transform: translateX(-300px); /* PCサイズのメニュー幅 */
 }
 
-.posts-grid {
+.posts-container {
+  margin: 2rem 0;
+}
+
+/* グリッド表示 */
+.posts-container.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
-  margin-bottom: 3rem;
 }
 
-.post-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: transform 0.2s;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.post-card:hover {
-  transform: translateY(-3px);
-}
-
-.post-thumbnail {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.post-content {
-  padding: 1.5rem;
-}
-
-.post-title {
-  font-size: 1.25rem;
-  margin: 0 0 1rem;
-  line-height: 1.4;
-}
-
-.post-meta {
-  font-size: 0.875rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.post-tags {
+/* リスト表示 */
+.posts-container.list {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.tag {
-  background: #f0f0f0;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+.posts-container.list .post-card {
+  display: flex;
+  gap: 1.5rem;
 }
 
-.post-description {
-  font-size: 0.875rem;
-  color: #666;
-  line-height: 1.6;
-  margin: 0;
+.posts-container.list .post-thumbnail {
+  width: 200px;
+  height: 150px;
 }
 
-/* ページネーションのスタイル */
+.posts-container.list .post-content {
+  flex: 1;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .posts-container.list .post-card {
+    flex-direction: column;
+  }
+
+  .posts-container.list .post-thumbnail {
+    width: 100%;
+    height: 200px;
+  }
+}
+
+/* ページネーション */
 .pagination {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
   margin-top: 2rem;
   padding: 1rem 0;
@@ -251,11 +256,18 @@ const { isMenuOpen } = useMenuStore()
 
 .pagination-button {
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
   background: white;
+  color: #64748b;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .pagination-button:disabled {
@@ -263,54 +275,8 @@ const { isMenuOpen } = useMenuStore()
   cursor: not-allowed;
 }
 
-.pagination-button:not(:disabled):hover {
-  background: #f5f5f5;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.page-number {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.page-number:hover {
-  background: #f5f5f5;
-}
-
-.page-number.active {
-  background: #000;
-  color: white;
-  border-color: #000;
-}
-
-/* モバイル対応 */
-@media (max-width: 768px) {
-  .posts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .page-numbers {
-    display: none;
-  }
-
-  .pagination {
-    gap: 0.5rem;
-  }
-
-  .container.is-menu-open {
-    transform: translateX(-80vw); /* モバイルサイズのメニュー幅 */
-  }
+.pagination-info {
+  font-size: 0.875rem;
+  color: #64748b;
 }
 </style>

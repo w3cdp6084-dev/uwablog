@@ -140,6 +140,10 @@
       :headings="headings" 
       class="post-toc desktop-only"
     />
+
+    <div class="post-actions">
+      <LikeButton :slug="post.slug" />
+    </div>
   </article>
 </template>
 
@@ -502,5 +506,11 @@ html {
   .related-thumbnail {
     height: 200px;
   }
+}
+
+.post-actions {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
 }
 </style> 
