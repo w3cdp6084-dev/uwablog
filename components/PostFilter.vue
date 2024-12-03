@@ -1,62 +1,30 @@
 <template>
   <div class="filter-container">
     <div class="filter-controls">
-      <!-- 検索バー -->
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="記事を検索..."
-            class="search-input"
-            @input="handleSearch"
+      <!-- 検索とタグ -->
+      <div class="search-tag-group">
+        <input 
+          type="text" 
+          placeholder="Search..." 
+          class="search-input"
+          v-model="searchQuery"
+          @input="handleSearch"
+        >
+        <div class="tag-buttons">
+          <button
+            v-for="tag in availableTags"
+            :key="tag"
+            class="tag-button"
+            :class="{ active: selectedTags.includes(tag) }"
+            @click="toggleTag(tag)"
           >
-          <!-- リセットボタン -->
-          <button 
-            v-if="hasActiveFilters"
-            class="reset-button"
-            @click="resetFilters"
-          >
-            検索条件をリセット
+            {{ tag }}
           </button>
         </div>
       </div>
 
-      <!-- フィルターグループ -->
-      <div class="filter-groups">
-        <!-- タグフィルター -->
-        <div class="filter-group">
-          <h3 class="filter-title">タグ</h3>
-          <div class="filter-tags">
-            <button
-              v-for="tag in availableTags"
-              :key="tag"
-              :class="['tag-button', { active: selectedTags.includes(tag) }]"
-              @click="toggleTag(tag)"
-            >
-              {{ tag }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 日付フィルター -->
-        <div class="filter-group">
-          <h3 class="filter-title">日付</h3>
-          <select 
-            v-model="selectedDate" 
-            class="date-select"
-            @change="handleSearch"
-          >
-            <option value="">すべての期間</option>
-            <option value="week">1週間以内</option>
-            <option value="month">1ヶ月以内</option>
-            <option value="year">1年以内</option>
-          </select>
-        </div>
-      </div>
-
+      <!-- 表示コントロール -->
       <div class="view-controls">
-        <!-- 並び替え -->
         <select 
           v-model="sortOrder" 
           class="sort-select"
@@ -66,7 +34,6 @@
           <option value="oldest">古い順</option>
         </select>
 
-        <!-- 表示切り替え -->
         <div class="view-toggle">
           <button 
             class="view-button"
@@ -99,41 +66,23 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
+const props = defineProps({
+  availableTags: {
+    type: Array,
+    default: () => []
+  }
+})
+
 const searchQuery = ref('')
-const selectedTags = ref<string[]>([])
-const selectedDate = ref('')
+const selectedTags = ref([])
 const sortOrder = ref('newest')
 const viewMode = ref('grid')
 
-// フィルターが有効かどうかを判定
-const hasActiveFilters = computed(() => {
-  return searchQuery.value !== '' || 
-         selectedTags.value.length > 0 || 
-         selectedDate.value !== ''
-})
+const emit = defineEmits(['search', 'sort', 'viewChange'])
 
-const props = defineProps<{
-  availableTags: string[]
-}>()
-
-const emit = defineEmits<{
-  (e: 'search', filters: {
-    query: string,
-    tags: string[],
-    date: string
-  }): void
-}>()
-
-// フィルターのリセット
-const resetFilters = () => {
-  searchQuery.value = ''
-  selectedTags.value = []
-  selectedDate.value = ''
-  handleSearch()
-}
-
-const toggleTag = (tag: string) => {
+// タグの切り替え
+const toggleTag = (tag) => {
   const index = selectedTags.value.indexOf(tag)
   if (index === -1) {
     selectedTags.value.push(tag)
@@ -143,11 +92,11 @@ const toggleTag = (tag: string) => {
   handleSearch()
 }
 
+// 検索ハンドラー
 const handleSearch = () => {
   emit('search', {
     query: searchQuery.value,
-    tags: selectedTags.value,
-    date: selectedDate.value
+    tags: selectedTags.value
   })
 }
 
@@ -156,6 +105,7 @@ const handleSort = () => {
   emit('sort', sortOrder.value)
 }
 
+// 表示モード切り替えハンドラー
 const changeView = (mode) => {
   viewMode.value = mode
   emit('viewChange', mode)
@@ -164,94 +114,67 @@ const changeView = (mode) => {
 
 <style scoped>
 .filter-container {
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-radius: 8px;
   margin-bottom: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.search-bar {
-  margin-bottom: 1.5rem;
+.filter-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-tag-group {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
 }
 
 .search-input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.filter-groups {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-.filter-group {
   min-width: 200px;
-}
-
-.filter-title {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #4b5563;
-  margin-bottom: 0.75rem;
 }
 
-.filter-tags {
+.tag-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .tag-button {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
   background: white;
+  color: #64748b;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.tag-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
 .tag-button.active {
   background: #3b82f6;
-  color: white;
   border-color: #3b82f6;
-}
-
-.date-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  font-size: 0.875rem;
-}
-
-.search-input-wrapper {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.reset-button {
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
   color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.reset-button:hover {
-  background-color: #dc2626;
-}
-
-.sort-control {
-  margin-left: auto;
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .sort-select {
@@ -262,29 +185,6 @@ const changeView = (mode) => {
   color: #64748b;
   font-size: 0.875rem;
   cursor: pointer;
-}
-
-.sort-select:hover {
-  border-color: #cbd5e1;
-}
-
-.sort-select:focus {
-  outline: none;
-  ring: 2px;
-  ring-color: #3b82f6;
-}
-
-.filter-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.view-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .view-toggle {
@@ -308,12 +208,65 @@ const changeView = (mode) => {
   transition: all 0.2s;
 }
 
-.view-button:hover {
-  color: #475569;
-}
-
 .view-button.active {
   background: white;
   color: #3b82f6;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-tag-group {
+    flex-direction: column;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .view-controls {
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+
+  .sort-select {
+    flex: 1;
+    margin-right: 1rem;
+  }
+
+  .tag-buttons {
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-container {
+    padding: 0.75rem;
+  }
+
+  .view-controls {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .sort-select {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tag-buttons {
+    justify-content: center;
+  }
 }
 </style> 
