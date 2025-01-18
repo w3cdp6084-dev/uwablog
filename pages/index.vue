@@ -8,6 +8,7 @@
     />
     
     <!-- 記事一覧 -->
+    <div class="animated-border"></div>
     <div 
       class="posts-container"
       :class="viewMode"
@@ -18,25 +19,27 @@
         :to="`/posts/${post.slug}`"
         class="post-card"
       >
-        <img 
-          v-if="post.thumbnail" 
-          :src="post.thumbnail" 
-          :alt="post.title"
-          class="post-thumbnail"
-        >
-        <div class="post-content">
-          <h2 class="post-title">{{ post.title }}</h2>
-          <div class="post-meta">
+        <div class="link-outer">
+          <img 
+            v-if="post.thumbnail" 
+            :src="post.thumbnail" 
+            :alt="post.title"
+            class="post-thumbnail"
+          >
+          <div class="post-content">
             <time :datetime="post.date">{{ formatDate(post.date) }}</time>
-            <div class="post-tags">
-              <span v-for="tag in post.tags" :key="tag" class="tag">
-                {{ tag }}
-              </span>
+            <div class="post-meta">
+              <h2 class="post-title text-base">{{ post.title }}</h2>
+              <p v-if="post.description" class="text-sm post-description">
+              {{ post.description }}
+              </p>
+              <div class="post-tags">
+                <span v-for="tag in post.tags" :key="tag" class="tag">
+                  {{ tag }}
+                </span>
+              </div>
             </div>
           </div>
-          <p v-if="post.description" class="post-description">
-            {{ post.description }}
-          </p>
         </div>
       </NuxtLink>
     </div>
@@ -190,7 +193,7 @@ const handleViewChange = (mode) => {
 
 <style scoped>
 .container {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 120px auto 0; 
   padding: 2rem;
   transition: transform 0.3s ease;
@@ -202,12 +205,28 @@ const handleViewChange = (mode) => {
 
 .posts-container {
   margin: 2rem 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.link-outer {
+  width: 386px; /* グリッドの列幅を全て使うように設定 */
+  padding: 1.3rem;
+  background-color: #ffffff;
+  border-radius: 16px;
+}
+
+.post-card {
+  background-color: #F3F3F3;
+  padding: 24px;
+  border-radius: 8px;
 }
 
 /* グリッド表示 */
 .posts-container.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(386px, 1fr));
   gap: 2rem;
 }
 
@@ -278,5 +297,58 @@ const handleViewChange = (mode) => {
 .pagination-info {
   font-size: 0.875rem;
   color: #64748b;
+}
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 30px 0 0 0;
+  span{
+    background-color: #F9F9F9;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+  }
+}
+.animated-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+}
+
+.group:hover .animated-border::before {
+  animation: border-dance 1.5s linear infinite;
+}
+
+@keyframes border-dance {
+  0% {
+    border-color: #FB6C24 transparent transparent transparent;
+  }
+  25% {
+    border-color: #FB6C24 #FB6C24 transparent transparent;
+  }
+  50% {
+    border-color: #FB6C24 #FB6C24 #FB6C24 transparent;
+  }
+  75% {
+    border-color: #FB6C24 #FB6C24 #FB6C24 #FB6C24;
+  }
+  100% {
+    border-color: transparent transparent transparent #FB6C24;
+  }
 }
 </style>
