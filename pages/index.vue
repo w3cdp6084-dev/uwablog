@@ -1,23 +1,12 @@
 <template>
-  <div class="container">
-    <PostFilter 
-      :available-tags="availableTags"
-      @search="handleSearch"
-      @sort="handleSort"
-      @viewChange="handleViewChange"
-    />
+  <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
     
-    <!-- 記事一覧 -->
-    <div class="animated-border"></div>
-    <div 
-      class="posts-container"
-      :class="viewMode"
-    >
+    <div class="posts-container" :class="viewMode">
       <NuxtLink 
         v-for="post in currentPosts" 
         :key="post.slug"
         :to="`/posts/${post.slug}`"
-        class="post-card"
+        class="post-card group"
       >
         <div class="link-outer">
           <img 
@@ -31,7 +20,7 @@
             <div class="post-meta">
               <h2 class="post-title text-base">{{ post.title }}</h2>
               <p v-if="post.description" class="text-sm post-description">
-              {{ post.description }}
+                {{ post.description }}
               </p>
               <div class="post-tags">
                 <span v-for="tag in post.tags" :key="tag" class="tag">
@@ -40,38 +29,26 @@
               </div>
             </div>
           </div>
+          <div class="animated-border"></div>
         </div>
       </NuxtLink>
     </div>
 
-    <!-- ページネーション -->
-    <div v-if="totalPages > 1" class="pagination">
-      <button 
-        :disabled="currentPage === 1"
-        @click="currentPage--"
-        class="pagination-button"
-      >
-        前のページ
-      </button>
-      <span class="pagination-info">
-        {{ currentPage }} / {{ totalPages }}
-      </span>
-      <button 
-        :disabled="currentPage === totalPages"
-        @click="currentPage++"
-        class="pagination-button"
-      >
-        次のページ
-      </button>
-    </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useMenuStore } from '@/stores/menu'
+
 // データフェッチ
 const { data: posts } = await useFetch('/api/posts')
 
-// 既存のコード
+const route = useRoute()
+const router = useRouter()
+const { isMenuOpen } = useMenuStore()
+
 const postsPerPage = 6
 const currentPage = ref(1)
 
@@ -111,15 +88,6 @@ const filteredPosts = computed(() => {
   })
 })
 
-// 検索ハンドラー
-const handleSearch = (filters) => {
-  searchFilters.value = filters
-  currentPage.value = 1 // 検索時にページを1に戻す
-}
-
-// 並び替えの状態
-const sortOrder = ref('newest')
-
 // 並び替えを適用した記事一覧
 const sortedPosts = computed(() => {
   if (!filteredPosts.value) return []
@@ -134,12 +102,7 @@ const sortedPosts = computed(() => {
   })
 })
 
-// 並び替えハンドラー
-const handleSort = (order) => {
-  sortOrder.value = order
-}
-
-// ページネーション用の記事取得を sortedPosts に変更
+// ページネーション用の記事取得
 const currentPosts = computed(() => {
   const start = (currentPage.value - 1) * postsPerPage
   const end = start + postsPerPage
@@ -151,25 +114,33 @@ const totalPages = computed(() => {
   return Math.ceil(filteredPosts.value.length / postsPerPage)
 })
 
-// 日付フォーマット
+const sortOrder = ref('newest')
+const viewMode = ref('grid')
+
+const handleSort = (order) => {
+  sortOrder.value = order
+}
+
+const handleViewChange = (mode) => {
+  viewMode.value = mode
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
 }
 
-// URLのクエリパラメータと同期
-const route = useRoute()
-const router = useRouter()
+const handlePageChange = (page) => {
+  currentPage.value = page
+}
 
-// URLからページ番号を取得
-watchEffect(() => {
-  const page = Number(route.query.page) || 1
+watch(() => route.query.page, (newPage) => {
+  const page = Number(newPage) || 1
   if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
+    handlePageChange(page)
   }
-})
+}, { immediate: true })
 
-// ページ変更時にURLを更新
 watch(currentPage, (newPage) => {
   router.push({
     query: {
@@ -178,145 +149,100 @@ watch(currentPage, (newPage) => {
     }
   })
 })
-
-// メニューの状態を取得
-const { isMenuOpen } = useMenuStore()
-
-// 表示モードの状態
-const viewMode = ref('grid')
-
-// 表示モード変更ハンドラー
-const handleViewChange = (mode) => {
-  viewMode.value = mode
-}
 </script>
 
 <style scoped>
 .container {
   max-width: 1440px;
   margin: 120px auto 0; 
-  padding: 2rem;
+  padding: 1rem;
   transition: transform 0.3s ease;
 }
 
-.container.is-menu-open {
-  transform: translateX(-300px); /* PCサイズのメニュー幅 */
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem;
+  }
 }
 
 .posts-container {
-  margin: 2rem 0;
+  margin: 1rem 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .posts-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .posts-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
 }
 
 .link-outer {
-  width: 386px; /* グリッドの列幅を全て使うように設定 */
-  padding: 1.3rem;
+  width: 100%;
+  padding: 1rem;
   background-color: #ffffff;
   border-radius: 16px;
 }
 
-.post-card {
-  background-color: #F3F3F3;
-  padding: 24px;
+@media (min-width: 768px) {
+  .link-outer {
+    padding: 1.3rem;
+  }
+}
+
+.post-thumbnail {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
   border-radius: 8px;
 }
 
-/* グリッド表示 */
-.posts-container.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(386px, 1fr));
-  gap: 2rem;
+.post-card {
+  background-color: #F3F3F3;
+  padding: 1rem;
+  border-radius: 8px;
 }
 
-/* リスト表示 */
+@media (min-width: 768px) {
+  .post-card {
+    padding: 24px;
+  }
+}
+
 .posts-container.list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .posts-container.list .post-card {
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.posts-container.list .post-thumbnail {
-  width: 200px;
-  height: 150px;
-}
-
-.posts-container.list .post-content {
-  flex: 1;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
+@media (min-width: 768px) {
   .posts-container.list .post-card {
-    flex-direction: column;
+    flex-direction: row;
+    gap: 1.5rem;
   }
 
   .posts-container.list .post-thumbnail {
-    width: 100%;
-    height: 200px;
+    width: 200px;
+    height: 150px;
   }
-}
 
-/* ページネーション */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding: 1rem 0;
-}
-
-.pagination-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  background: white;
-  color: #64748b;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.pagination-button:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.pagination-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  font-size: 0.875rem;
-  color: #64748b;
-}
-.post-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 30px 0 0 0;
-  span{
-    background-color: #F9F9F9;
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-size: 10px;
+  .posts-container.list .post-content {
+    flex: 1;
   }
-}
-.animated-border {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
 }
 
 .animated-border::before {
@@ -349,6 +275,17 @@ const handleViewChange = (mode) => {
   }
   100% {
     border-color: transparent transparent transparent #FB6C24;
+  }
+}
+
+@media (max-width: 768px) {
+  .posts-container.list .post-card {
+    flex-direction: column;
+  }
+
+  .posts-container.list .post-thumbnail {
+    width: 100%;
+    height: 200px;
   }
 }
 </style>
