@@ -1,6 +1,14 @@
 <template>
   <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
     
+    <!-- PostFilterコンポーネントの使用 -->
+    <PostFilter 
+      :availableTags="availableTags"
+      @search="handleSearch"
+      @sort="handleSort"
+      @viewChange="handleViewChange"
+    />
+
     <div class="posts-container" :class="viewMode">
       <NuxtLink 
         v-for="post in currentPosts" 
@@ -41,6 +49,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@/stores/menu'
+import PostFilter from '@/components/PostFilter.vue'
 
 // データフェッチ
 const { data: posts } = await useFetch('/api/posts')
@@ -52,15 +61,39 @@ const { isMenuOpen } = useMenuStore()
 const postsPerPage = 6
 const currentPage = ref(1)
 
-// 利用可能なタグを取得
+// 利用可能なフィルターオプションを取得
 const availableTags = computed(() => {
   if (!posts.value) return []
   return [...new Set(posts.value.flatMap(post => post.tags || []))]
 })
 
+const availableTypes = computed(() => {
+  if (!posts.value) return []
+  return [...new Set(posts.value.map(post => post.type || ''))]
+})
+
+const availableCategories = computed(() => {
+  if (!posts.value) return []
+  return [...new Set(posts.value.map(post => post.category || ''))]
+})
+
+const availableColors = computed(() => {
+  if (!posts.value) return []
+  return [...new Set(posts.value.map(post => post.color || ''))]
+})
+
+const availableFonts = computed(() => {
+  if (!posts.value) return []
+  return [...new Set(posts.value.map(post => post.font || ''))]
+})
+
 // 検索フィルターの状態
 const searchFilters = ref({
   query: '',
+  type: '',
+  category: '',
+  color: '',
+  font: '',
   tags: []
 })
 
@@ -75,6 +108,26 @@ const filteredPosts = computed(() => {
       const matchesTitle = post.title.toLowerCase().includes(query)
       const matchesDescription = post.description?.toLowerCase().includes(query)
       if (!matchesTitle && !matchesDescription) return false
+    }
+
+    // タイプフィルター
+    if (searchFilters.value.type && post.type !== searchFilters.value.type) {
+      return false
+    }
+
+    // カテゴリーフィルター
+    if (searchFilters.value.category && post.category !== searchFilters.value.category) {
+      return false
+    }
+
+    // カラーフィルター
+    if (searchFilters.value.color && post.color !== searchFilters.value.color) {
+      return false
+    }
+
+    // フォントフィルター
+    if (searchFilters.value.font && post.font !== searchFilters.value.font) {
+      return false
     }
 
     // タグフィルター
@@ -149,6 +202,12 @@ watch(currentPage, (newPage) => {
     }
   })
 })
+
+// 検索イベントのハンドラー
+const handleSearch = ({ query, tags }) => {
+  searchFilters.value.query = query
+  searchFilters.value.tags = tags
+}
 </script>
 
 <style scoped>
@@ -287,5 +346,36 @@ watch(currentPage, (newPage) => {
     width: 100%;
     height: 200px;
   }
+}
+
+.filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-input, .filter-select, .tag-select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s ease;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.filter-select {
+  min-width: 150px;
+}
+
+.tag-select {
+  min-width: 200px;
+}
+
+.search-input:focus, .filter-select:focus, .tag-select:focus {
+  border-color: #FB6C24;
 }
 </style>
