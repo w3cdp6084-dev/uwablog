@@ -319,24 +319,6 @@ const handleSearch = ({ query, tags }) => {
   animation: border-dance 1.5s linear infinite;
 }
 
-@keyframes border-dance {
-  0% {
-    border-color: #FB6C24 transparent transparent transparent;
-  }
-  25% {
-    border-color: #FB6C24 #FB6C24 transparent transparent;
-  }
-  50% {
-    border-color: #FB6C24 #FB6C24 #FB6C24 transparent;
-  }
-  75% {
-    border-color: #FB6C24 #FB6C24 #FB6C24 #FB6C24;
-  }
-  100% {
-    border-color: transparent transparent transparent #FB6C24;
-  }
-}
-
 @media (max-width: 768px) {
   .posts-container.list .post-card {
     flex-direction: column;
