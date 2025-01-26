@@ -1,44 +1,7 @@
 <template>
   <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-section">
-        <h3 class="footer-title">About</h3>
-        <p class="footer-text">
-          技術ブログ（仮）
-        </p>
-      </div>
-
-      <div class="footer-section">
-        <h3 class="footer-title">Links</h3>
-        <ul class="footer-links">
-          <li>
-            <NuxtLink to="/">Home</NuxtLink>
-          </li>
-          <li>
-            <NuxtLink to="/posts">Posts</NuxtLink>
-          </li>
-        </ul>
-      </div>
-
-      <div class="footer-section">
-        <h3 class="footer-title">Social</h3>
-        <ul class="footer-links">
-          <li>
-            <a href="https://github.com" target="_blank" rel="noopener">
-              GitHub
-            </a>
-          </li>
-          <li>
-            <a href="https://twitter.com" target="_blank" rel="noopener">
-              Twitter
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
-
     <div class="footer-bottom">
-      <p>&copy; {{ new Date().getFullYear() }} Your Blog Name. All rights reserved.</p>
+      <p>&copy; {{ new Date().getFullYear() }} uwablog. All rights reserved.</p>
     </div>
   </footer>
 </template>
@@ -97,9 +60,6 @@
 
 .footer-bottom {
   text-align: center;
-  padding-top: 2rem;
-  margin-top: 2rem;
-  border-top: 1px solid #374151;
   color: #9ca3af;
   font-size: 0.875rem;
 }
