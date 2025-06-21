@@ -43,7 +43,6 @@
               {{ tag }}
             </NuxtLink>
           </div>
-          <div class="animated-border"></div>
         </div>
       </div>
     </div>
@@ -307,7 +306,7 @@ const handleSearch = ({ query, tags }) => {
 .link-outer {
   width: 100%;
   padding: 1rem;
-  background-color: #ffffff;
+  background-color: var(--card-inner-bg);
   border-radius: 16px;
 }
 
@@ -325,7 +324,7 @@ const handleSearch = ({ query, tags }) => {
 }
 
 .post-card {
-  background-color: #F3F3F3;
+  background-color: var(--card-bg);
   padding: 1rem;
   border-radius: 8px;
 }
@@ -348,13 +347,13 @@ const handleSearch = ({ query, tags }) => {
   gap: 0.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--color-border);
 }
 
 .tag {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  color: #495057;
+  background-color: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--tag-text);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.875rem;
@@ -399,20 +398,6 @@ const handleSearch = ({ query, tags }) => {
   }
 }
 
-.animated-border::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
-}
-
-.group:hover .animated-border::before {
-  animation: border-dance 1.5s linear infinite;
-}
 
 @media (max-width: 768px) {
   .posts-container.list .post-card {

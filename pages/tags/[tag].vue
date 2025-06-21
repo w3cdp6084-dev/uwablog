@@ -53,7 +53,6 @@
               {{ tag }}
             </NuxtLink>
           </div>
-          <div class="animated-border"></div>
         </div>
       </div>
     </div>
@@ -262,7 +261,7 @@ useSeoMeta({
   text-align: center;
   margin-bottom: 3rem;
   padding: 2rem 0;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .tag-title {
@@ -308,7 +307,7 @@ useSeoMeta({
 }
 
 .post-card {
-  background-color: #F3F3F3;
+  background-color: var(--card-bg);
   padding: 1rem;
   border-radius: 8px;
 }
@@ -322,7 +321,7 @@ useSeoMeta({
 .link-outer {
   width: 100%;
   padding: 1rem;
-  background-color: #ffffff;
+  background-color: var(--card-inner-bg);
   border-radius: 16px;
 }
 
@@ -351,13 +350,13 @@ useSeoMeta({
   gap: 0.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--color-border);
 }
 
 .tag {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  color: #495057;
+  background-color: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--tag-text);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.875rem;
