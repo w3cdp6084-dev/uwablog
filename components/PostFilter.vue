@@ -103,15 +103,27 @@ const props = defineProps({
   availableTags: {
     type: Array,
     default: () => []
+  },
+  preselectedTags: {
+    type: Array,
+    default: () => []
   }
 })
 
 const searchQuery = ref('')
-const selectedTags = ref([])
+const selectedTags = ref([...props.preselectedTags])
 const sortOrder = ref('newest')
 const viewMode = ref('grid')
 
 const emit = defineEmits(['search', 'sort', 'viewChange'])
+
+// 検索ハンドラー
+const handleSearch = () => {
+  emit('search', {
+    query: searchQuery.value,
+    tags: selectedTags.value
+  })
+}
 
 // タグの切り替え
 const toggleTag = (tag) => {
@@ -124,13 +136,11 @@ const toggleTag = (tag) => {
   handleSearch()
 }
 
-// 検索ハンドラー
-const handleSearch = () => {
-  emit('search', {
-    query: searchQuery.value,
-    tags: selectedTags.value
-  })
-}
+// preselectedTagsが変更された時にselectedTagsを更新
+watch(() => props.preselectedTags, (newTags) => {
+  selectedTags.value = [...newTags]
+  handleSearch()
+}, { immediate: true })
 
 // 並び替えハンドラー
 const handleSort = () => {

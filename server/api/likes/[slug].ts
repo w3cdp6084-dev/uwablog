@@ -4,7 +4,7 @@ import { defineEventHandler } from 'h3'
 let likesMap = new Map()
 
 export default defineEventHandler(async (event) => {
-  const slug = event.context.params.slug
+  const slug = event.context.params?.slug
   const method = event.method
 
   // GETリクエスト（いいね数の取得）

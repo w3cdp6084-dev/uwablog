@@ -1,4 +1,5 @@
 import { Client } from '@notionhq/client'
+import type { PageObjectResponse, PartialPageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -9,12 +10,13 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const config = useRuntimeConfig()
     const notion = new Client({
-      auth: process.env.NOTION_API_KEY
+      auth: config.notionApiKey
     })
 
     const response = await notion.databases.query({
-      database_id: process.env.NOTION_DATABASE_ID as string,
+      database_id: config.notionDatabaseId,
       filter: {
         and: [
           {
@@ -48,14 +50,23 @@ export default defineEventHandler(async (event) => {
 
     // レスポンスの形式を単純化
     const relatedPosts = response.results.map(page => {
-      const props = page.properties as any
+      // PageObjectResponseかどうかをチェック
+      if ('properties' in page) {
+        const props = (page as PageObjectResponse).properties as any
+        return {
+          title: props.Name?.title[0]?.plain_text || '',
+          slug: props.Slug?.rich_text[0]?.plain_text || '',
+          date: props.Date?.date?.start || '',
+          thumbnail: props.Thumbnail?.files[0]?.file?.url || 
+                    props.Thumbnail?.files[0]?.external?.url || 
+                    null
+        }
+      }
       return {
-        title: props.Name?.title[0]?.plain_text || '',
-        slug: props.Slug?.rich_text[0]?.plain_text || '',
-        date: props.Date?.date?.start || '',
-        thumbnail: props.Thumbnail?.files[0]?.file?.url || 
-                  props.Thumbnail?.files[0]?.external?.url || 
-                  null
+        title: '',
+        slug: '',
+        date: '',
+        thumbnail: null
       }
     })
 

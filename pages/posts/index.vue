@@ -9,20 +9,30 @@
 </template>
 
 <script setup lang="ts">
-const { data: posts } = await useFetch('/api/posts')
+interface Post {
+  id: string
+  title: string
+  description: string
+  date: string
+  slug: string
+  tags: string[]
+  thumbnail: string | null
+}
+
+const { data: posts } = await useFetch<Post[]>('/api/posts')
 
 // 利用可能なタグを収集
 const availableTags = computed(() => {
   if (!posts.value) return []
   const tags = new Set<string>()
   posts.value.forEach(post => {
-    post.tags?.forEach(tag => tags.add(tag))
+    post.tags?.forEach((tag: string) => tags.add(tag))
   })
   return Array.from(tags)
 })
 
 // フィルター後の記事（初期値は全記事）
-const filteredPosts = ref<any[]>([])
+const filteredPosts = ref<Post[]>([])
 
 // 初期表示時に全記事を設定
 watchEffect(() => {
@@ -45,7 +55,7 @@ const handleSearch = (filters: {
   filteredPosts.value = posts.value.filter(post => {
     // テキスト検索
     const matchesQuery = !filters.query || 
-      post.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+      post.title?.toLowerCase().includes(filters.query.toLowerCase()) ||
       post.description?.toLowerCase().includes(filters.query.toLowerCase())
 
     // タグフィルター
@@ -54,7 +64,7 @@ const handleSearch = (filters: {
 
     // 日付フィルター
     let matchesDate = true
-    if (filters.date) {
+    if (filters.date && post.date) {
       const postDate = new Date(post.date)
       const now = new Date()
       switch (filters.date) {

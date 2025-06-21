@@ -66,9 +66,35 @@
 </template>
 
 <script setup lang="ts">
+interface PostMetadata {
+  title?: string
+  date?: string
+  tags?: string[]
+  description?: string
+}
+
+interface Post {
+  metadata?: PostMetadata
+  content?: any[]
+}
+
 const route = useRoute()
 const slug = route.params.slug as string
-const { data: post, pending, error } = await useFetch(`/api/posts/${slug}`)
+const { data: post, pending, error } = await useFetch<Post>(`/api/posts/${slug}`)
+
+// 日付のフォーマット関数
+const formatDate = (dateString?: string) => {
+  if (!dateString) return ''
+  try {
+    return new Date(dateString).toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch {
+    return dateString
+  }
+}
 
 // デバッグログを追加
 console.log('Post data:', post.value)

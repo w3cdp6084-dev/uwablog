@@ -46,8 +46,8 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    notionApiKey: process.env.NOTION_API_KEY,
-    notionDatabaseId: process.env.NOTION_DATABASE_ID
+    notionApiKey: process.env.NOTION_API_KEY || 'secret_qpWR4x102mf7bOvDfx3jICv1akEvEq2jPZgAtMfsQva',
+    notionDatabaseId: process.env.NOTION_DATABASE_ID || '1dc23cc04e6e46ca9c311fa8b1812c9d'
   },
 
   nitro: {

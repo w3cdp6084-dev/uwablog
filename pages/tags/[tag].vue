@@ -1,9 +1,19 @@
 <template>
-  <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
-    
+  <div class="container">
+    <div class="tag-header">
+      <h1 class="tag-title">
+        <span class="tag-icon">#</span>
+        {{ $route.params.tag }}
+      </h1>
+      <p class="tag-description">
+        「{{ $route.params.tag }}」タグの記事一覧 ({{ filteredPosts.length }}件)
+      </p>
+    </div>
+
     <!-- PostFilterコンポーネントの使用 -->
     <PostFilter 
       :availableTags="availableTags"
+      :preselectedTags="[$route.params.tag]"
       @search="handleSearch"
       @sort="handleSort"
       @viewChange="handleViewChange"
@@ -38,7 +48,7 @@
               v-for="tag in post.tags" 
               :key="tag" 
               :to="`/tags/${tag}`"
-              class="tag"
+              :class="['tag', { current: tag === $route.params.tag }]"
             >
               {{ tag }}
             </NuxtLink>
@@ -46,6 +56,12 @@
           <div class="animated-border"></div>
         </div>
       </div>
+    </div>
+
+    <!-- 記事が見つからない場合 -->
+    <div v-if="filteredPosts.length === 0" class="no-posts">
+      <p>「{{ $route.params.tag }}」タグの記事が見つかりませんでした。</p>
+      <NuxtLink to="/" class="back-link">トップページに戻る</NuxtLink>
     </div>
 
     <!-- ページネーション -->
@@ -77,67 +93,47 @@
         次へ →
       </button>
     </div>
-
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMenuStore } from '@/stores/menu'
 import PostFilter from '@/components/PostFilter.vue'
+
+const route = useRoute()
+const router = useRouter()
 
 // データフェッチ
 const { data: posts } = await useFetch('/api/posts')
 
-const route = useRoute()
-const router = useRouter()
-const { isMenuOpen } = useMenuStore()
-
 const postsPerPage = 9
 const currentPage = ref(1)
 
-// 利用可能なフィルターオプションを取得
+// 現在のタグでフィルタリングされた記事
+const filteredPosts = computed(() => {
+  if (!posts.value) return []
+  const currentTag = route.params.tag
+  return posts.value.filter(post => 
+    post.tags?.includes(currentTag)
+  )
+})
+
+// 利用可能なタグを取得
 const availableTags = computed(() => {
   if (!posts.value) return []
   return [...new Set(posts.value.flatMap(post => post.tags || []))]
 })
 
-const availableTypes = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.type || ''))]
-})
-
-const availableCategories = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.category || ''))]
-})
-
-const availableColors = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.color || ''))]
-})
-
-const availableFonts = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.font || ''))]
-})
-
 // 検索フィルターの状態
 const searchFilters = ref({
   query: '',
-  type: '',
-  category: '',
-  color: '',
-  font: '',
-  tags: []
+  tags: [route.params.tag] // 現在のタグを初期値に設定
 })
 
-// フィルタリングされた記事
-const filteredPosts = computed(() => {
-  if (!posts.value) return []
-  
-  return posts.value.filter(post => {
+// さらにフィルタリングされた記事（検索条件適用後）
+const searchFilteredPosts = computed(() => {
+  return filteredPosts.value.filter(post => {
     // キーワード検索
     if (searchFilters.value.query) {
       const query = searchFilters.value.query.toLowerCase()
@@ -146,30 +142,14 @@ const filteredPosts = computed(() => {
       if (!matchesTitle && !matchesDescription) return false
     }
 
-    // タイプフィルター
-    if (searchFilters.value.type && post.type !== searchFilters.value.type) {
-      return false
-    }
-
-    // カテゴリーフィルター
-    if (searchFilters.value.category && post.category !== searchFilters.value.category) {
-      return false
-    }
-
-    // カラーフィルター
-    if (searchFilters.value.color && post.color !== searchFilters.value.color) {
-      return false
-    }
-
-    // フォントフィルター
-    if (searchFilters.value.font && post.font !== searchFilters.value.font) {
-      return false
-    }
-
-    // タグフィルター
-    if (searchFilters.value.tags.length > 0) {
-      if (!searchFilters.value.tags.every(tag => post.tags?.includes(tag))) {
-        return false
+    // 追加タグフィルター
+    if (searchFilters.value.tags.length > 1) {
+      // 現在のタグ以外の追加フィルター
+      const additionalTags = searchFilters.value.tags.filter(tag => tag !== route.params.tag)
+      if (additionalTags.length > 0) {
+        if (!additionalTags.every(tag => post.tags?.includes(tag))) {
+          return false
+        }
       }
     }
 
@@ -177,11 +157,14 @@ const filteredPosts = computed(() => {
   })
 })
 
+const sortOrder = ref('newest')
+const viewMode = ref('grid')
+
 // 並び替えを適用した記事一覧
 const sortedPosts = computed(() => {
-  if (!filteredPosts.value) return []
+  if (!searchFilteredPosts.value) return []
   
-  return [...filteredPosts.value].sort((a, b) => {
+  return [...searchFilteredPosts.value].sort((a, b) => {
     const dateA = new Date(a.date)
     const dateB = new Date(b.date)
     
@@ -200,7 +183,7 @@ const currentPosts = computed(() => {
 
 // 総ページ数の計算
 const totalPages = computed(() => {
-  return Math.ceil(filteredPosts.value.length / postsPerPage)
+  return Math.ceil(sortedPosts.value.length / postsPerPage)
 })
 
 // 表示するページ番号を計算
@@ -212,7 +195,6 @@ const visiblePages = computed(() => {
   let start = Math.max(1, currentPage.value - half)
   let end = Math.min(totalPages.value, start + maxVisiblePages - 1)
   
-  // 終端が調整された場合、開始点も調整
   if (end - start + 1 < maxVisiblePages) {
     start = Math.max(1, end - maxVisiblePages + 1)
   }
@@ -224,17 +206,6 @@ const visiblePages = computed(() => {
   return pages
 })
 
-const sortOrder = ref('newest')
-const viewMode = ref('grid')
-
-const handleSort = (order) => {
-  sortOrder.value = order
-}
-
-const handleViewChange = (mode) => {
-  viewMode.value = mode
-}
-
 const formatDate = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
@@ -244,30 +215,34 @@ const handlePageChange = (page) => {
   currentPage.value = page
 }
 
-watch(() => route.query.page, (newPage) => {
-  const page = Number(newPage) || 1
-  if (page >= 1 && page <= totalPages.value) {
-    handlePageChange(page)
-  }
-}, { immediate: true })
+const handleSort = (order) => {
+  sortOrder.value = order
+}
 
-watch(currentPage, (newPage) => {
-  router.push({
-    query: {
-      ...route.query,
-      page: newPage === 1 ? undefined : newPage.toString()
-    }
-  })
-})
+const handleViewChange = (mode) => {
+  viewMode.value = mode
+}
 
 // 検索イベントのハンドラー
 const handleSearch = ({ query, tags }) => {
   searchFilters.value.query = query
   searchFilters.value.tags = tags
-  // フィルター変更時はページを1に戻す
   currentPage.value = 1
 }
 
+// ルートが変更された時の処理
+watch(() => route.params.tag, (newTag) => {
+  if (newTag) {
+    searchFilters.value.tags = [newTag]
+    currentPage.value = 1
+  }
+}, { immediate: true })
+
+// SEO設定
+useSeoMeta({
+  title: `${route.params.tag} - タグ一覧`,
+  description: `「${route.params.tag}」タグの記事一覧ページです。`
+})
 </script>
 
 <style scoped>
@@ -275,13 +250,41 @@ const handleSearch = ({ query, tags }) => {
   max-width: 1440px;
   margin: 120px auto 0; 
   padding: 1rem;
-  transition: transform 0.3s ease;
 }
 
 @media (min-width: 768px) {
   .container {
     padding: 2rem;
   }
+}
+
+.tag-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.tag-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tag-icon {
+  color: #FB6C24;
+  font-weight: 900;
+}
+
+.tag-description {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
 }
 
 .posts-container {
@@ -304,6 +307,18 @@ const handleSearch = ({ query, tags }) => {
   }
 }
 
+.post-card {
+  background-color: #F3F3F3;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+@media (min-width: 768px) {
+  .post-card {
+    padding: 24px;
+  }
+}
+
 .link-outer {
   width: 100%;
   padding: 1rem;
@@ -317,29 +332,17 @@ const handleSearch = ({ query, tags }) => {
   }
 }
 
+.post-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
 .post-thumbnail {
   width: 100%;
   height: 200px;
   object-fit: cover;
   border-radius: 8px;
-}
-
-.post-card {
-  background-color: #F3F3F3;
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-@media (min-width: 768px) {
-  .post-card {
-    padding: 24px;
-  }
-}
-
-.post-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
 }
 
 .post-tags {
@@ -360,9 +363,7 @@ const handleSearch = ({ query, tags }) => {
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
-  cursor: pointer;
   transition: all 0.2s ease;
-  display: inline-block;
 }
 
 .tag:hover {
@@ -371,89 +372,33 @@ const handleSearch = ({ query, tags }) => {
   color: white;
 }
 
-.posts-container.list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.posts-container.list .post-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .posts-container.list .post-card {
-    flex-direction: row;
-    gap: 1.5rem;
-  }
-
-  .posts-container.list .post-thumbnail {
-    width: 200px;
-    height: 150px;
-  }
-
-  .posts-container.list .post-content {
-    flex: 1;
-  }
-}
-
-.animated-border::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
-}
-
-.group:hover .animated-border::before {
-  animation: border-dance 1.5s linear infinite;
-}
-
-@media (max-width: 768px) {
-  .posts-container.list .post-card {
-    flex-direction: column;
-  }
-
-  .posts-container.list .post-thumbnail {
-    width: 100%;
-    height: 200px;
-  }
-}
-
-.filter-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.search-input, .filter-select, .tag-select {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-  transition: border-color 0.3s ease;
-}
-
-.search-input {
-  flex: 1;
-}
-
-.filter-select {
-  min-width: 150px;
-}
-
-.tag-select {
-  min-width: 200px;
-}
-
-.search-input:focus, .filter-select:focus, .tag-select:focus {
+.tag.current {
+  background-color: #FB6C24;
   border-color: #FB6C24;
+  color: white;
+  font-weight: 600;
+}
+
+.no-posts {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #FB6C24;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.back-link:hover {
+  background-color: #e55a1f;
 }
 
 /* ページネーションのスタイル */
@@ -534,6 +479,10 @@ const handleSearch = ({ query, tags }) => {
   
   .page-numbers {
     order: -1;
+  }
+  
+  .tag-title {
+    font-size: 2rem;
   }
 }
 </style>

@@ -2,21 +2,21 @@
   <article class="post-container">
     <div class="post-main">
       <header class="post-header">
-        <h1 class="post-title">{{ post.metadata.title }}</h1>
+        <h1 class="post-title">{{ post?.metadata?.title }}</h1>
         <div class="post-meta">
-          <time v-if="post.metadata.date" :datetime="post.metadata.date">
+          <time v-if="post?.metadata?.date" :datetime="post.metadata.date">
             {{ formatDate(post.metadata.date) }}
           </time>
           <div class="tags">
-            <span v-for="tag in post.metadata.tags" :key="tag" class="tag">
+            <span v-for="tag in post?.metadata?.tags" :key="tag" class="tag">
               {{ tag }}
             </span>
           </div>
         </div>
       </header>
 
-      <div v-if="post.metadata.thumbnail" class="thumbnail">
-        <img :src="post.metadata.thumbnail" :alt="post.metadata.title">
+      <div v-if="post?.metadata?.thumbnail" class="thumbnail">
+        <img :src="post.metadata.thumbnail" :alt="post?.metadata?.title">
       </div>
       <div class="mobile-toc-wrapper">
           <TableOfContents 
@@ -25,17 +25,17 @@
           />
         </div>
       <div class="post-content">
-        <div v-for="block in post.content" :key="block.id" class="block">
+        <div v-for="block in post?.content" :key="block.id" class="block">
           <p v-if="block.type === 'paragraph'" class="paragraph">
-            {{ block.paragraph.rich_text?.[0]?.plain_text || '' }}
+            {{ renderRichText(block.paragraph?.rich_text) }}
           </p>
 
           <h2 
-            v-if="block.type === 'heading_1'" 
+            v-else-if="block.type === 'heading_1'" 
             :id="`heading-${block.id}`"
             class="heading-1"
           >
-            {{ block.heading_1.rich_text?.[0]?.plain_text || '' }}
+            {{ renderRichText(block.heading_1?.rich_text) }}
           </h2>
 
           <h3 
@@ -43,7 +43,7 @@
             :id="`heading-${block.id}`"
             class="heading-2"
           >
-            {{ block.heading_2.rich_text?.[0]?.plain_text || '' }}
+            {{ renderRichText(block.heading_2?.rich_text) }}
           </h3>
 
           <h4 
@@ -51,23 +51,23 @@
             :id="`heading-${block.id}`"
             class="heading-3"
           >
-            {{ block.heading_3.rich_text?.[0]?.plain_text || '' }}
+            {{ renderRichText(block.heading_3?.rich_text) }}
           </h4>
 
           <ul v-else-if="block.type === 'bulleted_list_item'" class="list">
-            <li>{{ block.bulleted_list_item.rich_text?.[0]?.plain_text || '' }}</li>
+            <li>{{ renderRichText(block.bulleted_list_item?.rich_text) }}</li>
           </ul>
 
           <ol v-else-if="block.type === 'numbered_list_item'" class="numbered-list">
-            <li>{{ block.numbered_list_item.rich_text?.[0]?.plain_text || '' }}</li>
+            <li>{{ renderRichText(block.numbered_list_item?.rich_text) }}</li>
           </ol>
 
           <blockquote v-else-if="block.type === 'quote'" class="quote">
-            {{ block.quote.rich_text?.[0]?.plain_text || '' }}
+            {{ renderRichText(block.quote?.rich_text) }}
           </blockquote>
 
           <pre v-else-if="block.type === 'code'" class="code">
-            <code>{{ block.code.rich_text?.[0]?.plain_text || '' }}</code>
+            <code>{{ renderRichText(block.code?.rich_text) }}</code>
           </pre>
 
           <figure v-else-if="block.type === 'image'" class="image">
@@ -79,6 +79,12 @@
               {{ block.image.caption[0]?.plain_text }}
             </figcaption>
           </figure>
+
+          <!-- Fallback for unhandled block types -->
+          <div v-else class="unsupported-block" style="border: 1px dashed #ccc; padding: 10px; margin: 5px 0;">
+            <small style="color: #666;">Unsupported block type: {{ block.type }}</small>
+            <pre style="font-size: 0.8em; margin-top: 5px;">{{ JSON.stringify(block, null, 2) }}</pre>
+          </div>
         </div>
         <div class="share-section">
           <p class="share-text">この記事をシェアする</p>
@@ -142,14 +148,28 @@
     />
 
     <div class="post-actions">
-      <LikeButton :slug="post.slug" />
+      <LikeButton :slug="post?.metadata?.slug || route.params.slug as string" />
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
+interface PostMetadata {
+  title?: string
+  date?: string
+  tags?: string[]
+  description?: string
+  thumbnail?: string
+  slug?: string
+}
+
+interface Post {
+  metadata?: PostMetadata
+  content?: any[]
+}
+
 const route = useRoute()
-const { data: post, error, pending } = await useFetch(`/api/posts/${route.params.slug}`, {
+const { data: post, error, pending } = await useFetch<Post>(`/api/posts/${route.params.slug}`, {
   onResponseError({ response }) {
     if (response.status === 404) {
       throw createError({
@@ -169,7 +189,7 @@ const currentUrl = computed(() => {
 })
 
 const shareUrls = computed(() => ({
-  twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(post.value?.metadata.title || '')}&url=${encodeURIComponent(currentUrl.value)}`,
+  twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(post.value?.metadata?.title || '')}&url=${encodeURIComponent(currentUrl.value)}`,
   facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl.value)}`,
 }))
 
@@ -182,30 +202,36 @@ const copyUrl = async () => {
   }
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ja-JP')
+}
+
+// Rich textを完全にレンダリングする関数
+const renderRichText = (richText: any[]) => {
+  if (!richText || !Array.isArray(richText)) return ''
+  return richText.map(text => text.plain_text || '').join('')
 }
 
 const headings = computed(() => {
   if (!post.value?.content) return []
   
   return post.value.content
-    .filter(block => ['heading_1', 'heading_2', 'heading_3'].includes(block.type))
-    .map(block => {
+    .filter((block: any) => ['heading_1', 'heading_2', 'heading_3'].includes(block.type))
+    .map((block: any) => {
       const level = parseInt(block.type.split('_')[1])
-      const text = block[block.type].rich_text?.[0]?.plain_text || ''
+      const text = renderRichText(block[block.type]?.rich_text)
       const id = `heading-${block.id}`
       return { id, text, level }
     })
 })
 
-const relatedPosts = ref([])
+const relatedPosts = ref<any[]>([])
 
-console.log('Current post tags:', post.value?.metadata.tags)
+console.log('Current post tags:', post.value?.metadata?.tags)
 
 watchEffect(async () => {
-  if (post.value?.metadata.tags?.[0]) {
+  if (post.value?.metadata?.tags?.[0]) {
     try {
       const { data } = await useFetch('/api/posts/related', {
         query: {
@@ -214,7 +240,7 @@ watchEffect(async () => {
         }
       })
       console.log('Related posts:', data.value)
-      relatedPosts.value = data.value
+      relatedPosts.value = data.value || []
     } catch (err) {
       console.error('Failed to fetch related posts:', err)
     }

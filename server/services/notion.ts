@@ -114,17 +114,18 @@ export async function getPostsForTopPage() {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(`Attempt ${attempt}: Initializing Notion client...`)
+      const config = useRuntimeConfig()
       const notion = new Client({
-        auth: process.env.NOTION_API_KEY,
+        auth: config.notionApiKey,
       })
 
-      if (!process.env.NOTION_DATABASE_ID) {
+      if (!config.notionDatabaseId) {
         throw new Error('NOTION_DATABASE_ID is not configured')
       }
 
       console.log('Fetching database...')
       const response = await notion.databases.query({
-        database_id: process.env.NOTION_DATABASE_ID,
+        database_id: config.notionDatabaseId,
         sorts: [
           {
             property: 'Date',
@@ -260,7 +261,10 @@ export const getRelatedPosts = async (slug: string) => {
   try {
     // 現在の記事を取得してタグを取得
     const currentPost = await getSinglePost(slug)
-    const currentTags = currentPost.metadata.tags || []
+    if (!currentPost) {
+      return []
+    }
+    const currentTags = currentPost.metadata?.tags || []
 
     if (!currentTags.length) {
       return []

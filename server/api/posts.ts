@@ -3,10 +3,10 @@ import { getPostsForTopPage } from '~/server/services/notion'
 export default defineEventHandler(async (event) => {
   try {
     // 環境変数のチェック
-    const apiKey = process.env.NOTION_API_KEY
-    const databaseId = process.env.NOTION_DATABASE_ID
-
-    if (!apiKey || !databaseId) {
+    const config = useRuntimeConfig()
+    
+    
+    if (!config.notionApiKey || !config.notionDatabaseId) {
       throw createError({
         statusCode: 500,
         message: 'Server configuration error'
