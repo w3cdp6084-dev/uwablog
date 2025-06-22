@@ -400,6 +400,88 @@ useSeoMeta({
   background-color: #e55a1f;
 }
 
+.posts-container.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.posts-container.list .post-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.posts-container.list .link-outer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .posts-container.list .post-card {
+    flex-direction: row;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .posts-container.list .link-outer {
+    flex-direction: row;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .posts-container.list .post-link {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+    flex: 1;
+    align-items: center;
+  }
+
+  .posts-container.list .post-thumbnail {
+    width: 240px;
+    height: 160px;
+    flex-shrink: 0;
+    order: -1;
+  }
+
+  .posts-container.list .post-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .posts-container.list .post-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .posts-container.list .post-description {
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .posts-container.list .post-tags {
+    margin-top: 0.75rem;
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .posts-container.list .post-card {
+    flex-direction: column;
+  }
+
+  .posts-container.list .post-thumbnail {
+    width: 100%;
+    height: 200px;
+  }
+}
+
 /* ページネーションのスタイル */
 .pagination {
   display: flex;
