@@ -270,14 +270,6 @@ onUpdated(() => {
   margin: 2rem 0;
 }
 
-@media screen and (min-width: 800px) {
-  .posts-list {
-    display: flex;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-}
-
 @media screen and (max-width: 479px) {
   .posts-list {
     align-items: center;
@@ -292,9 +284,17 @@ onUpdated(() => {
 
 /* Blog List Item Styles from cocopon.me */
 .blog-listItem {
-  display: flex;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
   position: relative;
   width: 288px;
+  transition: box-shadow 0.2s ease;
+}
+
+.blog-listItem:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* ホバー時のポインター */
@@ -303,21 +303,18 @@ onUpdated(() => {
 }
 
 .blog-listItem_anchor {
-  display: flex;
-  flex-direction: column;
-  padding: 15px;
-  position: relative;
-  width: 100%;
+  display: block;
   text-decoration: none;
   color: inherit;
   outline: none;
+  width: 100%;
 }
 
 .blog-listItem_thumbnail {
-  background-color: #161821;
+  background-color: var(--border-color);
   height: 0;
   overflow: hidden;
-  padding-top: 100%;
+  padding-top: 66.67%; /* 3:2 aspect ratio */
   position: relative;
   width: 100%;
 }
@@ -357,33 +354,32 @@ onUpdated(() => {
 }
 
 .blog-listItem_date {
-  --px-scale: 2;
-  bottom: 9px;
-  color: #ff8000;
-  font-size: .8rem;
-  mix-blend-mode: screen;
   position: absolute;
-  right: 9px;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(255, 107, 43, 0.9);
+  color: white;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
   z-index: 1;
 }
 
-.blog-listItem_date .pxtx {
-  display: inline-block;
-  width: auto;
-}
-
 .blog-listItem_text {
-  box-sizing: border-box;
-  margin-top: 15px;
-  padding: 0 1px;
-  position: relative;
+  padding: 1rem;
 }
 
 .blog-listItem_title {
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   line-height: 1.4;
-  word-break: auto-phrase;
+  color: var(--text-color);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* Pixel Text Base Style */

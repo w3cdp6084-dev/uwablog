@@ -12,7 +12,7 @@
   "dependencies": {
     "@notionhq/client": "^2.2.15",
     "@pinia/nuxt": "^0.5.1",
-    "gsap": "^3.12.5",
+    "gsap": "^3.13.0",
     "notion-to-md": "^3.1.1",
     "nuxt": "^3.14.1592",
     "pinia": "^2.1.7",
