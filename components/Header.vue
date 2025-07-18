@@ -90,6 +90,11 @@ onMounted(() => {
   const menuMiddle = document.querySelector('.menu-bg.middle')
   const menuBottom = document.querySelector('.menu-bg.bottom')
   
+  // Set initial states
+  gsap.set(closeTriggerLeft, { rotation: 45, x: -100, y: -100 })
+  gsap.set(closeTriggerRight, { rotation: -45, x: 100, y: -100 })
+  gsap.set(closeTrigger, { opacity: 0, visibility: 'hidden' })
+  
   // OPEN TIMELINE
   tlOpen = gsap.timeline({ paused: true })
   
@@ -162,14 +167,14 @@ onMounted(() => {
     .add("preClose", "-=0.8")
     .to(closeTriggerLeft, {
       duration: 0.8,
-      x: -100,
-      y: 100,
+      x: 0,
+      y: 0,
       ease: "power4.out"
     }, "preClose")
     .to(closeTriggerRight, {
       duration: 0.8,
-      x: 100,
-      y: 100,
+      x: 0,
+      y: 0,
       delay: 0.2,
       ease: "power4.out"
     }, "preClose")
@@ -179,6 +184,19 @@ onMounted(() => {
   
   tlClose
     .add("close")
+    .to(closeTriggerLeft, {
+      duration: 0.2,
+      x: -100,
+      y: -100,
+      ease: "power4.in"
+    }, "close")
+    .to(closeTriggerRight, {
+      duration: 0.2,
+      x: 100,
+      y: -100,
+      delay: 0.1,
+      ease: "power4.in"
+    }, "close")
     .to(menuTop, {
       duration: 0.2,
       backgroundColor: "#6295ca",
@@ -237,19 +255,6 @@ onMounted(() => {
         menuContainer.style.visibility = 'hidden'
       }
     }, "close+=0.2")
-    .to(closeTriggerLeft, {
-      duration: 0.2,
-      x: 0,
-      y: 0,
-      ease: "power4.in"
-    }, "close")
-    .to(closeTriggerRight, {
-      duration: 0.2,
-      x: 0,
-      y: 0,
-      delay: 0.1,
-      ease: "power4.in"
-    }, "close")
     .to(openTriggerTop, {
       duration: 1,
       x: 0,
@@ -427,13 +432,14 @@ const closeMenu = () => {
 
 .close-trigger-bar {
   display: block;
-  width: 25px;
+  width: 30px;
   height: 4px;
   background-color: #222222;
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 19px;
+  left: 6px;
   transform-origin: center;
+  transition: all 0.3s cubic-bezier(.55,0,.1,1);
 }
 
 .close-trigger-bar::before {
@@ -449,11 +455,11 @@ const closeMenu = () => {
 }
 
 .close-trigger-bar.left {
-  transform: translate(-50%, -50%) rotate(45deg);
+  transform: rotate(45deg);
 }
 
 .close-trigger-bar.right {
-  transform: translate(-50%, -50%) rotate(-45deg);
+  transform: rotate(-45deg);
 }
 
 /* Hover Effects */
@@ -581,11 +587,6 @@ const closeMenu = () => {
   .side-sheet {
     width: 280px;
     right: -280px;
-  }
-  
-  .close-trigger {
-    top: 2rem;
-    right: 1rem;
   }
 }
 </style>
