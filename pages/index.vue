@@ -1,135 +1,88 @@
 <template>
-  <div class="container" :class="{ 'is-menu-open': isMenuOpen }">
-    
-    <!-- PostFilterコンポーネントの使用 -->
+  <div class="container">
+    <!-- Post Filter -->
     <PostFilter 
       :availableTags="availableTags"
-      @search="handleSearch"
-      @sort="handleSort"
-      @viewChange="handleViewChange"
+      @filter="handleFilter"
     />
 
-    <div class="posts-container" :class="viewMode">
-      <div 
+    <div class="posts-list">
+      <div
         v-for="post in currentPosts" 
         :key="post.slug"
-        class="post-card group"
+        class="posts-list_item"
       >
-        <div class="link-outer">
-          <NuxtLink :to="`/posts/${post.slug}`" class="post-link">
-            <img 
-              v-if="post.thumbnail" 
-              :src="post.thumbnail" 
-              :alt="post.title"
-              class="post-thumbnail"
-            >
-            <div class="post-content">
-              <time :datetime="post.date">{{ formatDate(post.date) }}</time>
-              <div class="post-meta">
-                <h2 class="post-title text-base">{{ post.title }}</h2>
-                <p v-if="post.description" class="text-sm post-description">
-                  {{ post.description }}
-                </p>
+        <article class="blog-listItem">
+          <NuxtLink :to="`/posts/${post.slug}`" class="blog-listItem_anchor bouncy">
+            <div class="blog-listItem_thumbnail">
+              <div 
+                v-if="post.thumbnail" 
+                class="blog-listItem_image lazy"
+                :data-bg="post.thumbnail"
+              ></div>
+              <div v-else class="blog-listItem_image blog-listItem_image-logo"></div>
+              <div class="blog-listItem_date">
+                <span class="pxtx pxtx-rendered">{{ formatDateShort(post.date) }}</span>
               </div>
             </div>
+            <div class="blog-listItem_text">
+              <div class="blog-listItem_title">{{ post.title }}</div>
+            </div>
           </NuxtLink>
-          <div class="post-tags">
-            <NuxtLink 
-              v-for="tag in post.tags" 
-              :key="tag" 
-              :to="`/tags/${tag}`"
-              class="tag"
-            >
-              {{ tag }}
-            </NuxtLink>
-          </div>
-        </div>
+        </article>
       </div>
     </div>
 
     <!-- ページネーション -->
     <div v-if="totalPages > 1" class="pagination">
-      <button 
-        @click="handlePageChange(currentPage - 1)"
-        :disabled="currentPage === 1"
-        class="pagination-btn prev"
+      <span class="page-info">{{ currentPage }} of {{ totalPages }} | </span>
+      <NuxtLink 
+        v-if="currentPage > 1"
+        :to="{ query: { page: currentPage - 1 === 1 ? undefined : currentPage - 1 }}"
+        class="page-link"
       >
-        ← 前へ
-      </button>
-      
-      <div class="page-numbers">
-        <button
-          v-for="page in visiblePages"
-          :key="page"
-          @click="handlePageChange(page)"
-          :class="['page-btn', { active: page === currentPage }]"
-        >
-          {{ page }}
-        </button>
-      </div>
-      
-      <button 
-        @click="handlePageChange(currentPage + 1)"
-        :disabled="currentPage === totalPages"
-        class="pagination-btn next"
+        prev
+      </NuxtLink>
+      <span v-else class="page-link disabled">prev</span>
+      <span class="separator"> / </span>
+      <NuxtLink 
+        v-if="currentPage < totalPages"
+        :to="{ query: { page: currentPage + 1 }}"
+        class="page-link"
       >
-        次へ →
-      </button>
+        next
+      </NuxtLink>
+      <span v-else class="page-link disabled">next</span>
     </div>
 
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUpdated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMenuStore } from '@/stores/menu'
 import PostFilter from '@/components/PostFilter.vue'
+import { useBouncy } from '@/composables/useBouncy'
+import { usePixelText } from '@/composables/usePixelText'
 
 // データフェッチ
 const { data: posts } = await useFetch('/api/posts')
 
 const route = useRoute()
 const router = useRouter()
-const { isMenuOpen } = useMenuStore()
 
 const postsPerPage = 9
 const currentPage = ref(1)
 
-// 利用可能なフィルターオプションを取得
+// フィルター状態
+const searchQuery = ref('')
+const selectedTags = ref([])
+
+// 利用可能なタグを取得
 const availableTags = computed(() => {
   if (!posts.value) return []
-  return [...new Set(posts.value.flatMap(post => post.tags || []))]
-})
-
-const availableTypes = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.type || ''))]
-})
-
-const availableCategories = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.category || ''))]
-})
-
-const availableColors = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.color || ''))]
-})
-
-const availableFonts = computed(() => {
-  if (!posts.value) return []
-  return [...new Set(posts.value.map(post => post.font || ''))]
-})
-
-// 検索フィルターの状態
-const searchFilters = ref({
-  query: '',
-  type: '',
-  category: '',
-  color: '',
-  font: '',
-  tags: []
+  const tags = posts.value.flatMap(post => post.tags || [])
+  return [...new Set(tags)]
 })
 
 // フィルタリングされた記事
@@ -137,44 +90,25 @@ const filteredPosts = computed(() => {
   if (!posts.value) return []
   
   return posts.value.filter(post => {
-    // キーワード検索
-    if (searchFilters.value.query) {
-      const query = searchFilters.value.query.toLowerCase()
+    // 検索クエリでフィルタリング
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase()
       const matchesTitle = post.title.toLowerCase().includes(query)
       const matchesDescription = post.description?.toLowerCase().includes(query)
       if (!matchesTitle && !matchesDescription) return false
     }
-
-    // タイプフィルター
-    if (searchFilters.value.type && post.type !== searchFilters.value.type) {
-      return false
+    
+    // タグでフィルタリング
+    if (selectedTags.value.length > 0) {
+      const postTags = post.tags || []
+      const hasAllTags = selectedTags.value.every(tag => postTags.includes(tag))
+      if (!hasAllTags) return false
     }
-
-    // カテゴリーフィルター
-    if (searchFilters.value.category && post.category !== searchFilters.value.category) {
-      return false
-    }
-
-    // カラーフィルター
-    if (searchFilters.value.color && post.color !== searchFilters.value.color) {
-      return false
-    }
-
-    // フォントフィルター
-    if (searchFilters.value.font && post.font !== searchFilters.value.font) {
-      return false
-    }
-
-    // タグフィルター
-    if (searchFilters.value.tags.length > 0) {
-      if (!searchFilters.value.tags.every(tag => post.tags?.includes(tag))) {
-        return false
-      }
-    }
-
+    
     return true
   })
 })
+
 
 // 並び替えを適用した記事一覧
 const sortedPosts = computed(() => {
@@ -184,9 +118,7 @@ const sortedPosts = computed(() => {
     const dateA = new Date(a.date)
     const dateB = new Date(b.date)
     
-    return sortOrder.value === 'newest' 
-      ? dateB - dateA  // 最新順
-      : dateA - dateB  // 古い順
+    return dateB - dateA  // 最新順
   })
 })
 
@@ -199,7 +131,7 @@ const currentPosts = computed(() => {
 
 // 総ページ数の計算
 const totalPages = computed(() => {
-  return Math.ceil(filteredPosts.value.length / postsPerPage)
+  return Math.ceil(sortedPosts.value.length / postsPerPage)
 })
 
 // 表示するページ番号を計算
@@ -223,20 +155,23 @@ const visiblePages = computed(() => {
   return pages
 })
 
-const sortOrder = ref('newest')
-const viewMode = ref('grid')
-
-const handleSort = (order) => {
-  sortOrder.value = order
-}
-
-const handleViewChange = (mode) => {
-  viewMode.value = mode
-}
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('ja-JP')
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}.${month}.${day}`
+}
+
+const formatDateShort = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const handlePageChange = (page) => {
@@ -259,309 +194,252 @@ watch(currentPage, (newPage) => {
   })
 })
 
-// 検索イベントのハンドラー
-const handleSearch = ({ query, tags }) => {
-  searchFilters.value.query = query
-  searchFilters.value.tags = tags
-  // フィルター変更時はページを1に戻す
-  currentPage.value = 1
+// フィルター変更時の処理
+const handleFilter = ({ query, tags }) => {
+  searchQuery.value = query
+  selectedTags.value = tags
+  currentPage.value = 1 // フィルター変更時は1ページ目に戻る
 }
+
+// フィルター変更時にページ数をリセット
+watch([searchQuery, selectedTags], () => {
+  if (currentPage.value > totalPages.value && totalPages.value > 0) {
+    currentPage.value = 1
+  }
+})
+
+// Bouncyシステムとピクセルテキストの初期化
+const { initBouncy, checkSafari } = useBouncy()
+const { initPixelText } = usePixelText()
+
+// 画像の遅延読み込み
+const initLazyLoading = () => {
+  const lazyImages = document.querySelectorAll('.lazy:not(.lazy-loaded)')
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target
+        if (img.dataset.bg) {
+          img.style.backgroundImage = `url(${img.dataset.bg})`
+        }
+        img.classList.add('lazy-loaded')
+        observer.unobserve(img)
+      }
+    })
+  })
+  
+  lazyImages.forEach(img => imageObserver.observe(img))
+}
+
+onMounted(() => {
+  checkSafari()
+  initBouncy()
+  initLazyLoading()
+})
+
+onUpdated(() => {
+  // ページ切り替え時に新しい要素に対して再初期化
+  initBouncy()
+  initLazyLoading()
+})
+
+
 
 </script>
 
 <style scoped>
 .container {
-  max-width: 1440px;
-  margin: 120px auto 0; 
-  padding: 1rem;
-  transition: transform 0.3s ease;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
 }
-
-@media (min-width: 768px) {
-  .container {
-    padding: 2rem;
-  }
-}
-
-.posts-container {
-  margin: 1rem 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .posts-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .posts-container {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-  }
-}
-
-.link-outer {
-  width: 100%;
-  padding: 1rem;
-  background-color: var(--card-inner-bg);
-  border-radius: 16px;
-}
-
-@media (min-width: 768px) {
-  .link-outer {
-    padding: 1.3rem;
-  }
-}
-
-.post-thumbnail {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.post-card {
-  background-color: var(--card-bg);
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-@media (min-width: 768px) {
-  .post-card {
-    padding: 24px;
-  }
-}
-
-.post-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.post-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.tag {
-  background-color: var(--tag-bg);
-  border: 1px solid var(--tag-border);
-  color: var(--tag-text);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-block;
-}
-
-.tag:hover {
-  background-color: #FB6C24;
-  border-color: #FB6C24;
-  color: white;
-}
-
-.posts-container.list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.posts-container.list .post-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.posts-container.list .link-outer {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .posts-container.list .post-card {
-    flex-direction: row;
-    gap: 1.5rem;
-    align-items: stretch;
-  }
-
-  .posts-container.list .link-outer {
-    flex-direction: row;
-    gap: 1.5rem;
-    align-items: center;
-  }
-
-  .posts-container.list .post-link {
-    display: flex;
-    flex-direction: row;
-    gap: 1.5rem;
-    flex: 1;
-    align-items: center;
-  }
-
-  .posts-container.list .post-thumbnail {
-    width: 240px;
-    height: 160px;
-    flex-shrink: 0;
-    order: -1;
-  }
-
-  .posts-container.list .post-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .posts-container.list .post-title {
-    font-size: 1.125rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .posts-container.list .post-description {
-    margin-bottom: 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .posts-container.list .post-tags {
-    margin-top: 0.75rem;
-    border-top: none;
-    padding-top: 0;
-  }
-}
-
 
 @media (max-width: 768px) {
-  .posts-container.list .post-card {
+  .container {
+    padding: 1rem;
+  }
+}
+
+/* Posts List Style from cocopon.me */
+.posts-list {
+  align-items: flex-start;
+  display: grid;
+  gap: 42px;
+  grid-template-columns: repeat(auto-fill, 288px);
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+@media screen and (min-width: 800px) {
+  .posts-list {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .posts-list {
+    align-items: center;
+    display: flex;
     flex-direction: column;
   }
-
-  .posts-container.list .post-thumbnail {
-    width: 100%;
-    height: 200px;
-  }
 }
 
-.filter-container {
+.posts-list_item {
+  position: relative;
+}
+
+/* Blog List Item Styles from cocopon.me */
+.blog-listItem {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  position: relative;
+  width: 288px;
 }
 
-.search-input, .filter-select, .tag-select {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-  transition: border-color 0.3s ease;
+/* ホバー時のポインター */
+.blog-listItem_anchor {
+  cursor: pointer;
 }
 
-.search-input {
-  flex: 1;
+.blog-listItem_anchor {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  position: relative;
+  width: 100%;
+  text-decoration: none;
+  color: inherit;
+  outline: none;
 }
 
-.filter-select {
-  min-width: 150px;
+.blog-listItem_thumbnail {
+  background-color: #161821;
+  height: 0;
+  overflow: hidden;
+  padding-top: 100%;
+  position: relative;
+  width: 100%;
 }
 
-.tag-select {
-  min-width: 200px;
+.blog-listItem_image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  bottom: 0;
+  filter: saturate(0%);
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: scale(1.01);
+  transition: filter .4s ease, opacity .4s ease;
 }
 
-.search-input:focus, .filter-select:focus, .tag-select:focus {
-  border-color: #FB6C24;
+.blog-listItem_image.blog-listItem_image-logo {
+  background-image: url(/assets/img/common/logo.svg);
+  background-size: 30%;
+  opacity: .3;
 }
+
+.blog-listItem_image.lazy-loaded {
+  opacity: .5;
+}
+
+.safari .blog-listItem_image {
+  filter: none;
+}
+
+.blog-listItem_anchor.bouncy.bouncy-active .blog-listItem_image {
+  filter: none;
+  opacity: 1;
+}
+
+.blog-listItem_date {
+  --px-scale: 2;
+  bottom: 9px;
+  color: #ff8000;
+  font-size: .8rem;
+  mix-blend-mode: screen;
+  position: absolute;
+  right: 9px;
+  z-index: 1;
+}
+
+.blog-listItem_date .pxtx {
+  display: inline-block;
+  width: auto;
+}
+
+.blog-listItem_text {
+  box-sizing: border-box;
+  margin-top: 15px;
+  padding: 0 1px;
+  position: relative;
+}
+
+.blog-listItem_title {
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1.4;
+  word-break: auto-phrase;
+}
+
+/* Pixel Text Base Style */
+.pxtx {
+  background-color: currentColor;
+  height: calc(var(--px-scale) * 5px);
+  image-rendering: pixelated;
+  mask-repeat: repeat-x;
+  -webkit-mask-repeat: repeat-x;
+  mask-position: left top;
+  -webkit-mask-position: left top;
+  mask-size: auto 100%;
+  -webkit-mask-size: auto 100%;
+  overflow: hidden;
+  text-indent: -100vw;
+}
+
+/* タイトルのホバー時の色変更のみ */
+.blog-listItem_anchor.bouncy-active .blog-listItem_title {
+  color: var(--primary-color);
+}
+
 
 /* ページネーションのスタイル */
 .pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin: 3rem 0 2rem;
-  padding: 1rem;
+  margin: 3rem 0;
+  padding: 2rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
-.pagination-btn {
-  padding: 0.75rem 1.5rem;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  color: #333;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  min-width: 100px;
+.page-info {
+  color: var(--text-secondary);
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background-color: #FB6C24;
-  color: white;
-  border-color: #FB6C24;
+.page-link {
+  color: var(--primary-color);
+  text-decoration: none;
 }
 
-.pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background-color: #f5f5f5;
+.page-link:hover {
+  text-decoration: underline;
 }
 
-.page-numbers {
-  display: flex;
-  gap: 0.5rem;
+.page-link.disabled {
+  color: var(--text-secondary);
+  cursor: default;
 }
 
-.page-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  color: #333;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-  transition: all 0.3s ease;
+.page-link.disabled:hover {
+  text-decoration: none;
 }
 
-.page-btn:hover {
-  background-color: #f8f9fa;
-  border-color: #FB6C24;
-}
-
-.page-btn.active {
-  background-color: #FB6C24;
-  color: white;
-  border-color: #FB6C24;
-}
-
-/* モバイル対応 */
-@media (max-width: 640px) {
-  .pagination {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .pagination-btn {
-    min-width: 120px;
-  }
-  
-  .page-numbers {
-    order: -1;
-  }
+.separator {
+  color: var(--text-secondary);
+  margin: 0 0.25rem;
 }
 </style>

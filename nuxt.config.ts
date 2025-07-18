@@ -13,7 +13,8 @@ export default defineNuxtConfig({
 
   css: [
     '@/assets/css/tailwind.css',
-    '@/assets/css/global.css'
+    '@/assets/css/global.css',
+    '@/assets/css/pixel-text.css'
   ],
 
   app: {

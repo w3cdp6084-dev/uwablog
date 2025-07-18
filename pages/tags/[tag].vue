@@ -23,37 +23,24 @@
       <div 
         v-for="post in currentPosts" 
         :key="post.slug"
-        class="post-card group"
+        class="cube-container"
       >
-        <div class="link-outer">
-          <NuxtLink :to="`/posts/${post.slug}`" class="post-link">
+        <NuxtLink :to="`/posts/${post.slug}`" class="cube-card">
+          <div class="cube-item-name">
+            <span>{{ post.tags?.[0] || 'Article' }}</span>
+          </div>
+          <div class="outer-block">
+            <span>{{ post.title }}</span>
+          </div>
+          <div class="cube-image-wrapper">
             <img 
               v-if="post.thumbnail" 
               :src="post.thumbnail" 
               :alt="post.title"
-              class="post-thumbnail"
+              class="cube-image intro-animation"
             >
-            <div class="post-content">
-              <time :datetime="post.date">{{ formatDate(post.date) }}</time>
-              <div class="post-meta">
-                <h2 class="post-title text-base">{{ post.title }}</h2>
-                <p v-if="post.description" class="text-sm post-description">
-                  {{ post.description }}
-                </p>
-              </div>
-            </div>
-          </NuxtLink>
-          <div class="post-tags">
-            <NuxtLink 
-              v-for="tag in post.tags" 
-              :key="tag" 
-              :to="`/tags/${tag}`"
-              :class="['tag', { current: tag === $route.params.tag }]"
-            >
-              {{ tag }}
-            </NuxtLink>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </div>
 
@@ -286,97 +273,230 @@ useSeoMeta({
   margin: 0;
 }
 
+/* JR East CubeContainer - Accurate Implementation */
 .posts-container {
-  margin: 1rem 0;
+  margin: 2rem 0;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(335px, 1fr));
   gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .posts-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .posts-container {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-  }
-}
-
-.post-card {
-  background-color: var(--card-bg);
   padding: 1rem;
-  border-radius: 8px;
 }
 
 @media (min-width: 768px) {
-  .post-card {
-    padding: 24px;
+  .posts-container {
+    gap: 1rem;
   }
 }
 
-.link-outer {
+@media (min-width: 1025px) {
+  .posts-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+}
+
+/* CubeItem - Main Container */
+.cube-container {
+  position: relative;
   width: 100%;
-  padding: 1rem;
-  background-color: var(--card-inner-bg);
-  border-radius: 16px;
+  aspect-ratio: 335/250;
+  overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .link-outer {
-    padding: 1.3rem;
+@media (min-width: 1025px) {
+  .cube-container {
+    border-radius: 1.5625rem 1.25rem 1.25rem 1.25rem;
   }
 }
 
-.post-link {
+@media (max-width: 1024px) {
+  .cube-container {
+    border-radius: 1.25rem;
+  }
+}
+
+/* Blur Shadow - Always Present */
+@media (min-width: 1025px) {
+  .cube-container:before {
+    content: "";
+    width: 21.5625rem;
+    height: 22.625rem;
+    transform-origin: top center;
+    opacity: 0;
+    transform: scaleY(0);
+    background-color: #006c02;
+    filter: blur(0.9375rem);
+    border-radius: 0.625rem;
+    position: absolute;
+    left: -0.375rem;
+    top: 0.875rem;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.19, 1, 0.22, 1), transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+}
+
+/* Hover Effects - Desktop Only */
+@media screen and (hover: hover) and (min-width: 1025px) {
+  .cube-container:hover {
+    z-index: 3;
+  }
+
+  .cube-container:hover:before {
+    transform: scaleY(1);
+    opacity: 0.15;
+    transition: opacity 0.2s cubic-bezier(0.215, 0.61, 0.355, 1), transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+
+  /* Green Overlay Expansion */
+  .cube-container:hover .outer-block {
+    transition: clip-path 0.3s cubic-bezier(0.19, 1, 0.22, 1) 0.01s;
+    clip-path: inset(0px 0px 0px 0px round 1.25rem);
+  }
+
+  /* Item Name Color Change */
+  .cube-container:hover .cube-item-name {
+    transition: background-color 0s cubic-bezier(0.19, 1, 0.22, 1);
+    background-color: #008803;
+    color: #fff;
+  }
+
+  .cube-container:hover .cube-item-name span {
+    color: #fff;
+  }
+
+  .cube-container:hover .cube-item-name span:before {
+    background-color: #fff;
+  }
+}
+
+.cube-card {
   display: block;
+  width: 100%;
+  height: 100%;
   text-decoration: none;
   color: inherit;
+  position: relative;
 }
 
-.post-thumbnail {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.post-tags {
+/* Green Overlay Block */
+.outer-block {
+  position: absolute;
+  left: -1rem;
+  top: -1rem;
+  width: calc(100% + 2rem);
+  height: calc(100% + 2rem);
+  background-color: #008803;
+  color: #fff;
+  border-radius: 1.25rem;
+  z-index: 1;
+  transition: clip-path 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  clip-path: inset(1.0625rem 1.0625rem 7.125rem 1.0625rem round 1.25rem);
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 1.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.8;
+  text-align: center;
 }
 
-.tag {
-  background-color: var(--tag-bg);
-  border: 1px solid var(--tag-border);
-  color: var(--tag-text);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s ease;
+@media (max-width: 1024px) {
+  .outer-block {
+    display: none;
+  }
 }
 
-.tag:hover {
-  background-color: #FB6C24;
-  border-color: #FB6C24;
-  color: white;
-}
-
-.tag.current {
-  background-color: #FB6C24;
-  border-color: #FB6C24;
-  color: white;
+/* Item Name - Top Left Tag */
+.cube-item-name {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  z-index: 2;
+  left: -0.0625rem;
+  top: -0.0625rem;
+  padding: 1.3125rem 1.5625rem 1.25rem 2.875rem;
+  border-radius: 1.25rem 0 0 0;
+  background-color: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
   font-weight: 600;
+  font-size: 0.875rem;
+  transition: background-color 0s cubic-bezier(0.19, 1, 0.22, 1) 0.06s;
 }
+
+@media (max-width: 1024px) {
+  .cube-item-name {
+    padding: 1.3125rem 1.25rem 1.25rem 2.25rem;
+    font-size: 0.8125rem;
+    letter-spacing: 0.024375rem;
+  }
+}
+
+.cube-item-name span {
+  position: relative;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 600;
+  transition: color 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.cube-item-name span:before {
+  content: "";
+  background-color: #008803;
+  border-radius: 50%;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin-right: 0.625rem;
+  margin-top: -0.28125rem;
+  transition: background-color 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@media (min-width: 1025px) {
+  .cube-container:hover .cube-item-name {
+    background-color: #008803;
+    color: #fff;
+    transition: background-color 0s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  
+  .cube-container:hover .cube-item-name span {
+    color: #fff;
+  }
+  
+  .cube-container:hover .cube-item-name span:before {
+    background-color: #fff;
+  }
+}
+
+/* Image Wrapper */
+.cube-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #cbe2d3 0%, #e2f1e7 59.5%);
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.cube-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
+  transform: translate3d(0, 100%, 0);
+}
+
+.cube-image.intro-animation,
+.cube-image.is-intersect {
+  transform: translateZ(0);
+  transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Clean JR East Style - Remove unused elements */
 
 .no-posts {
   text-align: center;
@@ -400,85 +520,23 @@ useSeoMeta({
   background-color: #e55a1f;
 }
 
+/* List view maintains cube style but with adjusted aspect ratio */
 .posts-container.list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
 }
 
-.posts-container.list .post-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.posts-container.list .link-outer {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.posts-container.list .cube-container {
+  aspect-ratio: 16/9;
 }
 
 @media (min-width: 768px) {
-  .posts-container.list .post-card {
-    flex-direction: row;
-    gap: 1.5rem;
-    align-items: stretch;
+  .posts-container.list {
+    grid-template-columns: 1fr;
   }
-
-  .posts-container.list .link-outer {
-    flex-direction: row;
-    gap: 1.5rem;
-    align-items: center;
-  }
-
-  .posts-container.list .post-link {
-    display: flex;
-    flex-direction: row;
-    gap: 1.5rem;
-    flex: 1;
-    align-items: center;
-  }
-
-  .posts-container.list .post-thumbnail {
-    width: 240px;
-    height: 160px;
-    flex-shrink: 0;
-    order: -1;
-  }
-
-  .posts-container.list .post-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .posts-container.list .post-title {
-    font-size: 1.125rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .posts-container.list .post-description {
-    margin-bottom: 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .posts-container.list .post-tags {
-    margin-top: 0.75rem;
-    border-top: none;
-    padding-top: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .posts-container.list .post-card {
-    flex-direction: column;
-  }
-
-  .posts-container.list .post-thumbnail {
-    width: 100%;
-    height: 200px;
+  
+  .posts-container.list .cube-container {
+    aspect-ratio: 21/9;
   }
 }
 
