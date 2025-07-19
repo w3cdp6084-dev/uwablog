@@ -16,7 +16,7 @@
           <NuxtLink 
             :to="`/posts/${post.slug}`" 
             class="blog-listItem_anchor bouncy"
-            :style="{ '--bg': '#f5f5f5' }"
+            :style="{ '--bg': 'var(--color-bg-light)' }"
           >
             <div class="blog-listItem_thumbnail">
               <div 
@@ -305,7 +305,7 @@ onUpdated(() => {
 }
 
 .blog-listItem_thumbnail {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-light);
   height: 0;
   overflow: hidden;
   padding-top: 100%;
@@ -314,7 +314,7 @@ onUpdated(() => {
 }
 
 :root.dark .blog-listItem_thumbnail {
-  background-color: #2a2d3a;
+  background-color: var(--color-bg-light);
 }
 
 .blog-listItem_image {

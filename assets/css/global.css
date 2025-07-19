@@ -7,6 +7,14 @@
   --font-body: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, "Hiragino Sans", "Meiryo", sans-serif;
   --color-bg-dark-f: hsl(230, 20%, 20%);
   --color-fg-primary: black;
+  
+  /* cocopon.me style variables */
+  --color-bg-primary: white;
+  --color-bg-light: hsl(230, 10%, 95%);
+  --color-bg-strong: hsla(40, 80%, 50%, 0.2);
+  --color-fg-secondary: hsl(230, 20%, 48%);
+  --color-fg-anchor: hsl(200deg, 100%, 35%);
+  --color-fg-anchor-hover: hsl(200deg, 100%, 45%);
 }
 
 :root.dark {
@@ -15,6 +23,12 @@
   --text-secondary: #999999;
   --primary-color: #4da3ff;
   --border-color: #333333;
+  
+  /* cocopon.me dark mode variables */
+  --color-bg-primary: #1a1a1a;
+  --color-bg-light: hsl(230, 20%, 25%);
+  --color-bg-strong: hsla(40, 80%, 50%, 0.1);
+  --color-fg-secondary: hsl(230, 20%, 65%);
 }
 
 /* Dark mode specific */
