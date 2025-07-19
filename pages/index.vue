@@ -256,6 +256,8 @@ onUpdated(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {
@@ -272,6 +274,8 @@ onUpdated(() => {
   grid-template-columns: repeat(auto-fill, 288px);
   justify-content: center;
   margin: 2rem 0;
+  position: relative;
+  z-index: 1;
 }
 
 @media screen and (max-width: 479px) {
@@ -284,6 +288,7 @@ onUpdated(() => {
 
 .posts-list_item {
   position: relative;
+  z-index: 1;
 }
 
 /* Blog List Item Styles from cocopon.me */
@@ -291,6 +296,7 @@ onUpdated(() => {
   display: flex;
   position: relative;
   width: 288px;
+  z-index: 1;
 }
 
 .blog-listItem_anchor {
