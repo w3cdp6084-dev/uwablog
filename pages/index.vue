@@ -381,6 +381,11 @@ onUpdated(() => {
   -webkit-box-orient: vertical;
 }
 
+/* タイトルのホバー時の色変更 */
+.blog-listItem_anchor.bouncy-active .blog-listItem_title {
+  color: var(--primary-color);
+}
+
 /* Pixel Text Base Style */
 .pxtx {
   background-color: currentColor;
@@ -394,11 +399,6 @@ onUpdated(() => {
   -webkit-mask-size: auto 100%;
   overflow: hidden;
   text-indent: -100vw;
-}
-
-/* タイトルのホバー時の色変更のみ */
-.blog-listItem_anchor.bouncy-active .blog-listItem_title {
-  color: var(--primary-color);
 }
 
 
