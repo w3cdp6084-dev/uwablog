@@ -305,12 +305,16 @@ onUpdated(() => {
 }
 
 .blog-listItem_thumbnail {
-  background-color: var(--color-bg-dark-f, #2a2d3a);
+  background-color: #f5f5f5;
   height: 0;
   overflow: hidden;
   padding-top: 100%;
   position: relative;
   width: 100%;
+}
+
+:root.dark .blog-listItem_thumbnail {
+  background-color: #2a2d3a;
 }
 
 .blog-listItem_image {
