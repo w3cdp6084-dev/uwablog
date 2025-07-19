@@ -7,8 +7,13 @@
       </NuxtLayout>
     </div>
     <Footer />
+    <BouncyCursor />
   </div>
 </template>
+
+<script setup>
+import BouncyCursor from '~/components/BouncyCursor.vue'
+</script>
 
 <style>
 .app-wrapper {

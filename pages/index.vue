@@ -12,8 +12,12 @@
         :key="post.slug"
         class="posts-list_item"
       >
-        <article class="blog-listItem">
-          <NuxtLink :to="`/posts/${post.slug}`" class="blog-listItem_anchor bouncy">
+        <div class="blog-listItem">
+          <NuxtLink 
+            :to="`/posts/${post.slug}`" 
+            class="blog-listItem_anchor bouncy"
+            :style="{ '--bg': '#f5f5f5' }"
+          >
             <div class="blog-listItem_thumbnail">
               <div 
                 v-if="post.thumbnail" 
@@ -29,7 +33,7 @@
               <div class="blog-listItem_title">{{ post.title }}</div>
             </div>
           </NuxtLink>
-        </article>
+        </div>
       </div>
     </div>
 
@@ -284,37 +288,27 @@ onUpdated(() => {
 
 /* Blog List Item Styles from cocopon.me */
 .blog-listItem {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
+  display: flex;
   position: relative;
   width: 288px;
-  transition: box-shadow 0.2s ease;
-}
-
-.blog-listItem:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* ホバー時のポインター */
-.blog-listItem_anchor {
-  cursor: pointer;
 }
 
 .blog-listItem_anchor {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  position: relative;
+  width: 100%;
   text-decoration: none;
   color: inherit;
   outline: none;
-  width: 100%;
 }
 
 .blog-listItem_thumbnail {
-  background-color: var(--border-color);
+  background-color: var(--color-bg-dark-f, #2a2d3a);
   height: 0;
   overflow: hidden;
-  padding-top: 66.67%; /* 3:2 aspect ratio */
+  padding-top: 100%;
   position: relative;
   width: 100%;
 }
@@ -354,26 +348,27 @@ onUpdated(() => {
 }
 
 .blog-listItem_date {
+  --px-scale: 2;
+  bottom: 9px;
+  color: #ff8000;
+  font-size: .8rem;
+  mix-blend-mode: screen;
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background-color: rgba(255, 107, 43, 0.9);
-  color: white;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  font-weight: 500;
-  z-index: 1;
+  right: 9px;
 }
 
 .blog-listItem_text {
-  padding: 1rem;
+  box-sizing: border-box;
+  margin-top: 15px;
+  padding: 0 1px;
+  position: relative;
 }
 
 .blog-listItem_title {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: bold;
   line-height: 1.4;
+  word-break: auto-phrase;
   color: var(--text-color);
   margin: 0;
   overflow: hidden;
